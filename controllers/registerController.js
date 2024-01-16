@@ -15,7 +15,6 @@ const handleNewUser = async (req, res) => {
         if (duplicate) {
             return res.status(409).json({ 'message': 'Email already exists.' });
         }
-
         // Encrypt the password
         const hashedPwd = await bcrypt.hash(password, 10);
 

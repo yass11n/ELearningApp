@@ -3,19 +3,14 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const cors = require('cors');
-const { logger } = require('./middleware/logEvents');
 const errorHandler = require('./middleware/errorHandler');
-const verifyJWT = require('./middleware/verifyJWT');
 const mongoose = require("mongoose");
 const connectDB = require("./config/dbConn"); // محتاج استعدي الداتا بيز اللي استخدمتهاوعملت كونكت ليها قي الكونفج
-const { log } = require('console');
 const PORT = process.env.PORT || 3500;
 
 //connect to mongoDB
 connectDB(); // هستعدي الفانكشن ديه عشان استخدم الداتا بيز here its ready to connect
 
-// custom middleware logger
-app.use(logger);
 
 // Handle options credentials check - before CORS!
 // and fetch cookies credentials requirement
