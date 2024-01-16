@@ -11,9 +11,8 @@ In a typical MVC (Model-View-Controller) architecture, controllers handle the in
 const getAllUsers = async (req, res) => {
     const users = await User.find();//find() say find everything not something in particular
     console.log(users);
-    if(!users) return req.status(204).json({'message': 'No users found'});
+    if(!users) return req.status(200).json({'message': 'No users found'});
     res.json(users);
-    
 }
 //handler dah his job is to create new employee and add it to database
 // @desc add new user
@@ -28,7 +27,7 @@ const createNewUser = async (req, res) => {
         email : req.body.email,
         password: req.body.password
     });
-    res.status(201).json(result);// success creation is done fulfilled
+    res.status(200).json(result);// success creation is done fulfilled
    }catch(err){
         console.log(err);
    }
@@ -46,7 +45,7 @@ const updateUser =  async (req, res) => {
     }
     const user = await User.findOne({__id : req.body.id}).exec();
     if (!user) {
-        return res.status(204).json({ "message": ` No user matches ID ${req.body.id}` });
+        return res.status(200).json({ "message": ` No user matches ID ${req.body.id}` });
     }
     // update data first name , last name
     if (req.body?.username) user.username = req.body.username;
@@ -63,7 +62,7 @@ const deleteUser = async (req, res) => {
     }
     const user = await User.findOne({__id : req.body.id}).exec();
     if (!user) {
-        return res.status(204).json({ "message": ` No user matches ID ${req.body.id}` });
+        return res.status(200).json({ "message": ` No user matches ID ${req.body.id}` });
     }
     const result = await user.deleteOne({ __id : req.body.id});
     res.json(result);
@@ -81,7 +80,7 @@ const getUser = async (req, res) => {
     const user = await User.findById(req.params.id);
     console.log(user);
     if (!user) {
-        return res.status(204).json({ "message": ` No employee matches ID ${req.params.id}` });
+        return res.status(200).json({ "message": ` No employee matches ID ${req.params.id}` });
     }
     res.status(200).json(user);
     
