@@ -8,7 +8,13 @@ In a typical MVC (Model-View-Controller) architecture, controllers handle the in
 
 // @desc get all employee
 // route is get (get all users)
-
+const getAllUsers = async (req, res) => {
+    const users = await User.find();//find() say find everything not something in particular
+    console.log(users);
+    if(!users) return req.status(204).json({'message': 'No users found'});
+    res.json(users);
+    
+}
 //handler dah his job is to create new employee and add it to database
 // @desc add new user
 // route post
@@ -85,5 +91,6 @@ module.exports = {
     createNewUser,
     updateUser,
     deleteUser,
-    getUser
+    getUser,
+    getAllUsers
 }

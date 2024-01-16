@@ -8,6 +8,7 @@ const errorHandler = require('./middleware/errorHandler');
 const verifyJWT = require('./middleware/verifyJWT');
 const mongoose = require("mongoose");
 const connectDB = require("./config/dbConn"); // محتاج استعدي الداتا بيز اللي استخدمتهاوعملت كونكت ليها قي الكونفج
+const { log } = require('console');
 const PORT = process.env.PORT || 3500;
 
 //connect to mongoDB
@@ -29,17 +30,17 @@ app.use(express.urlencoded({ extended: false }));
 // built-in middleware for json 
 app.use(express.json());
 
-
 //serve static files
-app.use('/', express.static(path.join(__dirname, '/public')));
+//app.use('/', express.static(path.join(__dirname, '/public')));
 
 // routes  to use routes in routers we use (app.use)
 //app.use('/', require('./routes/root'));
 app.use('/register', require('./routes/register'));
 app.use('/auth', require('./routes/auth'));
 app.use('/users', require('./routes/api/user'));
+app.get('/' ,(req,res)=> res.send("fuck off"))
 
-app.all('*', (req, res) => {
+app.all('/*', (req, res) => {
     res.status(404);
 });
 

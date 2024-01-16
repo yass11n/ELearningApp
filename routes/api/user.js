@@ -6,7 +6,7 @@ const verifyRoles = require('../../middleware/verifyRoles');
 
 //getAllEmployee fn in controller
 
-// router.get('/',employeesController.getAllEmployees)
+router.get('/',usersController.getAllUsers);
 //(delete) router.delete('/',verifyRoles(ROLES_LIST.Admin),employeesController.deleteEmployee)
 router.route('/:id')
     .get(usersController.getUser)
