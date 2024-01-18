@@ -11,7 +11,7 @@ const handleNewUser = async (req, res) => {
         }
 
         // Check if the email is empty or has an invalid format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.com/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({ 'message': 'Invalid email format.' });
         }
