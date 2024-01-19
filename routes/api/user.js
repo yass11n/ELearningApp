@@ -6,15 +6,14 @@ const verifyRoles = require('../../middleware/verifyRoles');
 
 //getAllEmployee fn in controller
 
-router.get('/',usersController.getAllUsers);
+ router.get('/',usersController.getAllUsers);
 //(delete) router.delete('/',verifyRoles(ROLES_LIST.Admin),employeesController.deleteEmployee)
 router.route('/:id')
     .get(usersController.getUser)
-    .put(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Editor), usersController.updateUser)
     .delete(verifyRoles(ROLES_LIST.Admin), usersController.deleteUser);
 router.route('/')
+    .put(usersController.updateUser)
     .post(verifyRoles(ROLES_LIST.Admin, ROLES_LIST.Editor), usersController.createNewUser);
-
-
+router.put('/changepassword',usersController.ChangeUserPassword);
 
 module.exports = router;

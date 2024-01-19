@@ -5,6 +5,7 @@ const path = require('path');
 const cors = require('cors');
 const errorHandler = require('./middleware/errorHandler');
 const mongoose = require("mongoose");
+const multer = require("multer");
 const connectDB = require("./config/dbConn"); // محتاج استعدي الداتا بيز اللي استخدمتهاوعملت كونكت ليها قي الكونفج
 const PORT = process.env.PORT || 3500;
 
@@ -33,8 +34,7 @@ app.use(express.json());
 app.use('/register', require('./routes/register'));
 app.use('/auth', require('./routes/auth'));
 app.use('/users', require('./routes/api/user'));
-app.get('/' ,(req,res)=> res.send("hello"))
-
+app.get('/' ,(req,res)=> res.send("hello"));
 app.all('/*', (req, res) => {
     res.status(404);
 });

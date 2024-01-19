@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { stringify } = require('uuid');
 const Schema = mongoose.Schema; // we will need both of them in every schema we will make
 
 const userSchema = new Schema({
@@ -26,7 +27,9 @@ const userSchema = new Schema({
     Instructor : Number,
     Admin: Number,
   },
-  profileImage: { type: String }, // URL to the user's profile image
+  profileImage: { 
+    type:String,
+   }, // URL to the user's profile image
   bio: { type: String }, // User's biography or description
   dateOfBirth: { type: Date },
   phone: { type: String },
@@ -46,7 +49,10 @@ const userSchema = new Schema({
     facebook: { type: String },
     // Add more social media fields as needed
   },
-
+  active:{
+    type:Boolean,
+    default :true,
+  },
 },{
   timestamps: true
 });
