@@ -27,7 +27,8 @@ exports.register = asyncHandler(async function (req, res) {
   const user = await User.create({
     name: req.body.name,
     email: req.body.email,
-    slug: req.body.slug,
+    roles: req.body.roles,
+    phone : req.body.phone,
   });
 
   // 2- create user credentials

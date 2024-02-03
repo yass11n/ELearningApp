@@ -7,11 +7,6 @@ const userSchema = new mongoose.Schema(
       minLength: 3,
       required: true,
     },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-    },
     email: {
       type: String,
       required: true,
@@ -20,10 +15,10 @@ const userSchema = new mongoose.Schema(
     bio: String,
     phone: String,
     profileImage: String,
-    role: {
+    roles: {
       type: String,
-      enum: ["admin", "instractor", "user"],
-      default: "user",
+      enum: ["Admin", "Instructor", "User"],
+      default: "User",
     },
   },
   {
