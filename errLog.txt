@@ -1,0 +1,9 @@
+2024-01-21T06:46:25.982Z: MongoServerError: E11000 duplicate key error collection: ELearnDB.categories index: name_1 dup key: { name: "Lifestyle" }
+2024-01-21T06:59:41.668Z: MongoServerError: E11000 duplicate key error collection: ELearnDB.categories index: name_1 dup key: { name: "Lifestyle" }
+2024-01-21T08:27:22.382Z: CastError: Cast to ObjectId failed for value "{ id: '65acd5629a3cfd4b1ea2a3bb' }" (type Object) at path "_id" for model "Category"
+2024-01-21T08:30:58.277Z: CastError: Cast to ObjectId failed for value "{ id: '65acd5629a3cfd4b1ea2a3bb' }" (type Object) at path "_id" for model "Category"
+2024-01-21T08:32:28.044Z: ReferenceError: _id is not defined
+2024-01-21T08:32:52.834Z: CastError: Cast to ObjectId failed for value "{ id: { id: '65acd5629a3cfd4b1ea2a3bb' } }" (type Object) at path "_id" for model "Category"
+2024-01-21T08:35:04.841Z: CastError: Cast to ObjectId failed for value "{ id: '65acd5629a3cfd4b1ea2a3bb' }" (type Object) at path "_id" for model "Category"
+2024-01-21T08:36:51.299Z: CastError: Cast to ObjectId failed for value "{ id: '65acd5629a3cfd4b1ea2a3bb' }" (type Object) at path "_id" for model "Category"
+2024-01-21T08:36:52.493Z: CastError: Cast to ObjectId failed for value "{ id: '65acd5629a3cfd4b1ea2a3bb' }" (type Object) at path "_id" for model "Category"

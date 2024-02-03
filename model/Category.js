@@ -1,22 +1,34 @@
-// in every model hn3ml require ll mongoose
 const mongoose = require('mongoose');
-// 1-we create schema like that
+// 1- Create Schema
 const categorySchema = new mongoose.Schema(
-   // we put attributes here 
   {
-  name: { type: String, required: true },
-  description: { type: String },
-
-  // Additional Fields
-  parentCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
-  subcategories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Category' }],
-},
-{
-  timestamps: true 
-  // bt3ml 7agten (created at,updated at) in database to get lateset for example
-}
+    name: {
+      type: String,
+      required: [true, 'Category required'],
+      unique: [true, 'Category must be unique'],
+      minlength: [3, 'Too short category name'],
+      maxlength: [32, 'Too long category name'],
+    },
+    // A and B => shopping.com/a-and-b
+    slug: {
+      type: String,
+      lowercase: true,
+    },
+  },
+  { timestamps: true }
 );
-// 2-create model mn 5lalh h2der 23ml el CRUD operations
-const Category = mongoose.model('Category', categorySchema);
 
-module.exports = Category;
+// // findOne, findAll and update
+// categorySchema.post('init', (doc) => {
+//   setImageURL(doc);
+// });
+
+// // create
+// categorySchema.post('save', (doc) => {
+//   setImageURL(doc);
+// });
+
+// 2- Create model
+const CategoryModel = mongoose.model('Category', categorySchema);
+
+module.exports = CategoryModel;

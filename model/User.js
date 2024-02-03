@@ -27,6 +27,8 @@ const userSchema = new Schema({
     Instructor : Number,
     Admin: Number,
   },
+  resetToken: String,
+  resetTokenExpiration: Date,
   profileImage: { 
     type:String,
    }, // URL to the user's profile image

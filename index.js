@@ -34,6 +34,7 @@ app.use(express.json());
 app.use('/register', require('./routes/register'));
 app.use('/auth', require('./routes/auth'));
 app.use('/users', require('./routes/api/user'));
+app.use('/category', require('./routes/category'));
 app.get('/' ,(req,res)=> res.send("hello"));
 app.all('/*', (req, res) => {
     res.status(404);

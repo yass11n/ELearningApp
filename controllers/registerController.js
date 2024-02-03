@@ -21,7 +21,6 @@ const handleNewUser = async (req, res) => {
         if (!egyptPhoneNumberRegex.test(phoneNumber)) {
             return res.status(400).json({ 'message': 'Invalid Egypt phone number format.' });
         }
-
         // Check if password and confirmPassword match
         if (password !== confirmPassword) {
             return res.status(400).json({ 'message': 'Passwords do not match.' });

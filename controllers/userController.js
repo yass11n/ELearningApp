@@ -4,7 +4,6 @@ const bcrypt = require('bcrypt');
 /*Controllers are responsible for handling incoming requests, processing the input, and returning an appropriate response.
  They act as an intermediary between the incoming HTTP requests and the business logic of the application. 
 In a typical MVC (Model-View-Controller) architecture, controllers handle the interaction between the model (data) and the view (presentation).*/
-
 // use async await in CRUD operation (c create r read u update d delete) 
 
 // @desc get all employee
@@ -14,7 +13,7 @@ const getAllUsers = async (req, res) => {
     console.log(users);
     if(!users) return req.status(200).json({'message': 'No users found'});
     res.json(users);
-}
+};
 //handler dah his job is to create new employee and add it to database
 // @desc add new user
 // route post
@@ -33,9 +32,7 @@ const createNewUser = async (req, res) => {
         console.log(err);
    }
 
-}
-
-
+};
 //@desc update specific user with id 
 //router bta3ha (put) in routes(api)
 // const updateUser =  async (req, res) => {
@@ -87,7 +84,6 @@ const updateUser = async (req, res) => {
     }
 };
 module.exports = { updateUser };
-
 const ChangeUserPassword = async (req, res) => {
     try {
         // req.params.id means we get the id from the URL params
@@ -105,9 +101,8 @@ const ChangeUserPassword = async (req, res) => {
         const user = await User.findOne({ _id: req.body.id }).exec();
 
         if (!user) {
-            return res.status(404).json({ "message": `No user found with ID ${req.body.id}` });
+            return res.status(404).json({ "message": `No user found with ID ${req.body.id}`});
         }
-
         // Check if the current password matches the existing password in the database
         const isPasswordMatch = await bcrypt.compare(currentPassword, user.password);
 
@@ -130,20 +125,19 @@ const ChangeUserPassword = async (req, res) => {
         res.status(500).json({ 'message': 'Internal Server Error' });
     }
 };
-
 module.exports={ChangeUserPassword};
 
 const deleteUser = async (req, res) => {
     if(!req?.body?.id){
         return res.status(400).json({'message' : 'User ID required '});
     }
-    const user = await User.findOne({__id : req.body.id}).exec();
+    const user = await User.findOne({_id : req.body.id}).exec();
     if (!user) {
         return res.status(200).json({ "message": ` No user matches ID ${req.body.id}` });
     }
     const result = await user.deleteOne({ __id : req.body.id});
     res.json(result);
-}
+};
 //@desc get specific user with id 
 //router bta3ha get in routes(api)
 const getUser = async (req, res) => {
@@ -160,7 +154,7 @@ const getUser = async (req, res) => {
     }
     res.status(200).json(user);
     
-}
+};
 
 module.exports = {
     createNewUser,
@@ -169,4 +163,4 @@ module.exports = {
     getUser,
     getAllUsers,
     ChangeUserPassword
-}
+};
