@@ -1,6 +1,4 @@
 const { body } = require("express-validator");
-const slugify = require("slugify");
-const { v4: uuid } = require("uuid");
 const User = require("../../models/user.model");
 const validatorMiddleware = require("../../middleware/validatorMiddleware");
 
@@ -9,11 +7,7 @@ exports.registerValidator = [
     .notEmpty()
     .withMessage("user name is required")
     .isLength({ min: 3 })
-    .withMessage("Too short user name")
-    .custom((input, { req }) => {
-      req.body.slug = `${slugify(input)}-${uuid()}`;
-      return true;
-    }),
+    .withMessage("Too short user name"),
   body("email")
     .notEmpty()
     .withMessage("Email is required")
@@ -26,6 +20,14 @@ exports.registerValidator = [
         }
       })
     ),
+    body("roles")
+    .notEmpty()
+    .withMessage("Status is required"),
+    body("phone")
+    .notEmpty()
+    .withMessage("Phone number is required")
+    .isMobilePhone("ar-EG")
+    .withMessage("Invalid Egyptian phone number"),
   body("password")
     .notEmpty()
     .withMessage("Password is required")

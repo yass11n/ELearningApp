@@ -81,7 +81,7 @@ exports.protect = asyncHandler(async function (req, res, next) {
 exports.allowedRoles = (...roles) =>
   asyncHandler(async function (req, _res, next) {
     // check if user role is allowed
-    if (!roles.includes(req.user.role))
+    if (!roles.includes(req.user.roles))
       next(unAuthorized({ message: "access denied" }));
 
     next();

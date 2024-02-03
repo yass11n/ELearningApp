@@ -9,11 +9,7 @@ exports.createUserValidator = [
     .notEmpty()
     .withMessage("user name is required")
     .isLength({ min: 3 })
-    .withMessage("Too short user name")
-    .custom((input, { req }) => {
-      req.body.slug = `${slugify(input)}-${uuid()}`;
-      return true;
-    }),
+    .withMessage("Too short user name"),
   body("email")
     .notEmpty()
     .withMessage("user email is required")
@@ -41,10 +37,9 @@ exports.createUserValidator = [
     .optional()
     .isMobilePhone(["ar-EG"])
     .withMessage("phone number must be from Egypt"),
-  body("role")
-    .optional()
+  body("roles")
     .custom((input) => {
-      return input === "admin" || input === "instractor" || input === "user";
+      return input === "Admin" || input === "Instructor" || input === "User";
     })
     .withMessage("role must be admin or instractor or user"),
   body("profileImage").optional(),
@@ -83,7 +78,7 @@ exports.updateUserValidator = [
   body("role")
     .optional()
     .custom((input) => {
-      return input === "admin" || input === "instractor" || input === "user";
+      return input === "Admin" || input === "Instructor" || input === "User";
     })
     .withMessage("role must be admin or instractor or user"),
   body("profileImg").optional(),

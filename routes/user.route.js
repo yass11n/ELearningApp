@@ -49,7 +49,7 @@ router.put(
 router.delete("/deleteMe", deleteLoggedUser);
 
 // private [admin]
-router.use(allowedRoles("admin"));
+router.use(allowedRoles("Admin"));
 
 router
   .route("/")
