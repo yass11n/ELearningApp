@@ -22,7 +22,7 @@ exports.registerValidator = [
     ),
     body("roles")
     .notEmpty()
-    .withMessage("Status is required"),
+    .withMessage("roles is required"),
     body("phone")
     .notEmpty()
     .withMessage("Phone number is required")

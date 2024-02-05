@@ -6,7 +6,7 @@ const { unAuthorized } = require("../utils/response/errors");
 exports.generateAccessToken = function (payload) {
   return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
     algorithm: "HS256",
-    expiresIn: "6h",
+    expiresIn: "120d",
   });
 };
 
