@@ -21,6 +21,10 @@ const {
   uploadToCloudinary,
 } = require("../services/file-upload.service");
 
+const { getAll, getOne } = require("../services/factory.service");
+const Instructor = require("../models/instructor.model");
+const UserCredentials = require("../models/userCredential.model");
+
 exports.uploadProfileImage = uploadSingle("profileImage");
 
 exports.resizeProfileImage = asyncHandler(async (req, res, next) => {
@@ -79,61 +83,81 @@ exports.createUser = asyncHandler(async (req, res) => {
  * @route GET /api/v1/users
  * @access private [admin]
  */
-exports.getAllUsers = asyncHandler(async (req, res) => {
-  // 1- get all users from database
-  const users = await User.find({});
-
-  // 2- send response with all users data
-  const { statusCode, body } = success({ data: users });
-  res.status(statusCode).json(body);
-});
+exports.getAllUsers = getAll(User);
 
 /**
  * @description get user by id
  * @route GET /api/v1/users/:id
  * @access private [admin]
  */
-exports.getUser = asyncHandler(async (req, res, next) => {
-  // 1- get user by id
-  const user = await User.findById(req.params.id);
-
-  // 2- check if user exists
-  if (!user)
-    next(
-      recordNotFound({
-        message: `user with id ${req.params.id} not found`,
-      })
-    );
-
-  // 3- send response with user info
-  const { statusCode, body } = success({ data: user });
-  res.status(statusCode).json(body);
-});
+exports.getUser = getOne(User);
 
 /**
- * @description update user profile
+ * @description (update user by id) profile 
  * @route PUT /api/v1/users/:id
  * @access private [admin]
- */
-exports.updateUser = asyncHandler(async (req, res, next) => {
-  // 1- update user by id
-  const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-  });
+ */ 
 
-  // 2- check if user exists
-  if (!user)
-    next(
-      recordNotFound({
-        message: `user with id ${req.params.id} not found`,
-      })
+exports.updateUser = asyncHandler(async (req, res, next) => {
+  try {
+    // 1- Update userCredentials for provider id and return data after update (new one)
+    if (req.body.email) {
+      await UserCredentials.findOneAndUpdate(
+        { user: req.params.id },
+        { providerId: req.body.email },
+        { new: true }
+      );
+    }
+
+    // 2- Fetch the existing user data from the database
+    const existingUser = await User.findById(req.params.id);
+
+    // 3- Check if the user exists
+    if (!existingUser) {
+      return next(
+        recordNotFound({
+          message: `User with id ${req.params.id} not found`,
+        })
+      );
+    }
+
+    // 4- Construct an update object with only the allowed fields that have different values
+    const updateObject = {};
+    if (req.body.name !== existingUser.name) {
+      updateObject.name = req.body.name;
+    }
+    if (req.body.email  !== existingUser.email) {
+      updateObject.email = req.body.email;
+    }
+    if (req.body.bio !== existingUser.bio) {
+      updateObject.bio = req.body.bio;
+    }
+    if (req.body.phone  !== existingUser.phone) {
+      updateObject.phone = req.body.phone;
+    }
+    if (req.body.gender  !== existingUser.gender) {
+      updateObject.gender = req.body.gender;
+    }
+    if (req.body.profileImage  !== existingUser.profileImage) {
+      updateObject.profileImage = req.body.profileImage;
+    }
+
+    // 5- Update user by id with the constructed update object
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      updateObject,
+      {
+        new: true,
+      }
     );
 
-  // 3- send response with new user profile
-  const { statusCode, body } = success({ data: user });
-  res.status(statusCode).json(body);
+    // 6- Send response with the updated user profile
+    const { statusCode, body } = success({ data: updateObject });
+    res.status(statusCode).json(body);
+  } catch (error) {
+    next(error);
+  }
 });
-
 /**
  * @description update user password
  * @route PUT /api/v1/users/changePassword/:id
@@ -185,8 +209,11 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
 
   // 3- delete user credentials
   await UserCredential.findOneAndDelete({ user: req.params.id });
+  
+  // 4- delete instructor page
+  await Instructor.findOneAndDelete({ user: req.params.id });
 
-  // 4- send response back
+  // 5- send response back
   const { statusCode, body } = success({
     message: "user deleted successfully",
   });
@@ -261,7 +288,8 @@ exports.updateLoggedUserPassword = asyncHandler(async (req, res, next) => {
  * @access protected [user]
  */
 exports.deleteLoggedUser = asyncHandler(async (req, res) => {
-  // 1- set active state to false
+  // 1- set active state to false for user
+  
   await UserCredential.findOneAndUpdate(
     { user: req.user._id },
     {
@@ -276,3 +304,27 @@ exports.deleteLoggedUser = asyncHandler(async (req, res) => {
   });
   res.status(statusCode).json(body);
 });
+
+
+// exports.updateUser = asyncHandler(async (req, res, next) => {
+//   // 1- update userCredentials for provider id and return data after update(new one) 
+//   if(req.body.email){
+//    await UserCredentials.findOneAndUpdate({ user : req.params.id}, {providerId : req.body.email}, {new : true});
+//   }
+//   // 2- update user by id
+//   const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+//     new: true,
+//   });
+
+//   // 3- check if user exists
+//   if (!user)
+//     next(
+//       recordNotFound({
+//         message: `user with id ${req.params.id} not found`,
+//       })
+//     );
+
+//   // 4- send response with new user profile
+//   const { statusCode, body } = success({ data: user });
+//   res.status(statusCode).json(body); });
+

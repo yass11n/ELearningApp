@@ -52,7 +52,7 @@ exports.register = asyncHandler(async function (req, res) {
 
   // 6- send access token and user data as response
   const { statusCode, body } = success({
-    message: `welcome ${user.name}. let's begin our journey`,
+    message: `welcome ${user.name}.let's begin our journey`,
     data: { token: accessToken },
   });
   res.status(statusCode).json(body);
@@ -68,15 +68,15 @@ exports.login = asyncHandler(async function (req, res, next) {
   const credentials = await UserCredential.findOne({
     providerId: req.body.email,
     provider: "email",
-  });
+  }).populate("user");
 
   // 2- check if user exists and password is correct
   if (!credentials || !(await credentials.comparePassword(req.body.password)))
     return next(unAuthorized({ message: "invalid email or password" }));
 
   // 3- generate access token and refresh token to the user
-  const accessToken = generateAccessToken({ userId: credentials.user });
-  const refreshToken = generateRefreshToken({ userId: credentials.user });
+  const accessToken = generateAccessToken({ userId: credentials.user._id });
+  const refreshToken = generateRefreshToken({ userId: credentials.user._id });
 
   // 4- check if user already has refresh token
   const jwtToken = req.cookies["jwt"];
@@ -96,7 +96,7 @@ exports.login = asyncHandler(async function (req, res, next) {
   // 7- send access token as response
   const { statusCode, body } = success({
     message: `welcome back.`,
-    data: { token: accessToken },
+    data: { token: accessToken , user: credentials.user },
   });
   res.status(statusCode).json(body);
 });
@@ -121,7 +121,7 @@ exports.refresh = asyncHandler(async function (req, res, next) {
   }
 
   // 3- check if user exists
-  const credentials = await UserCredential.findOne({ user: decoded.userId });
+  const credentials = await UserCredential.findOne({ user: decoded.userId , }).populate("user");
 
   if (!credentials) {
     return next(unAuthorized());
@@ -135,8 +135,8 @@ exports.refresh = asyncHandler(async function (req, res, next) {
   }
 
   // 5- generate new access token and refresh
-  const accessToken = generateAccessToken({ userId: credentials.user });
-  const refreshToken = generateRefreshToken({ userId: credentials.user });
+  const accessToken = generateAccessToken({ userId: credentials.user._id });
+  const refreshToken = generateRefreshToken({ userId: credentials.user._id });
 
   // 6- replace old refresh with new refresh token in database
   const tokenIndex = credentials.tokens.indexOf(jwtToken);
@@ -148,7 +148,8 @@ exports.refresh = asyncHandler(async function (req, res, next) {
   setRefreshTokenCookie(res, refreshToken);
 
   // 8- send new access token
-  const { statusCode, body } = success({ data: { token: accessToken } });
+  const { statusCode, body } = success({ 
+    data: { token: accessToken , user: credentials.user}, });
   res.status(statusCode).json(body);
 });
 
@@ -270,11 +271,11 @@ exports.confirmReset = asyncHandler(async function (req, res, next) {
     passwordResetSecret: resetCodeHash,
     passwordResetExpires: { $gt: Date.now() },
   });
-
   // 3- check if user exists
   if (!credentials) {
     return next(badRequest());
   }
+  
 
   // 4- set passwordResetVerified to true and save changes to database
   credentials.passwordResetVerified = true;
@@ -312,7 +313,6 @@ exports.resetPassword = asyncHandler(async function (req, res, next) {
   if (!credentials.passwordResetVerified) {
     return next(badRequest({ message: "reset code is not verified" }));
   }
-
   // 5- reset user password
   credentials.password = req.body.password;
   credentials.passwordChangedAt = Date.now();
@@ -328,8 +328,8 @@ exports.resetPassword = asyncHandler(async function (req, res, next) {
   }
 
   // 7- generate new access token and refresh for the user
-  const accessToken = generateAccessToken({ userId: credentials.user });
-  const refreshToken = generateRefreshToken({ userId: credentials.user });
+  const accessToken = generateAccessToken({ userId: credentials.user._id });
+  const refreshToken = generateRefreshToken({ userId: credentials.user._id });
 
   // 8- save user with new refresh token
   credentials.tokens.push(refreshToken);

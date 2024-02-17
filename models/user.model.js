@@ -15,9 +15,13 @@ const userSchema = new mongoose.Schema(
     bio: String,
     phone: String,
     profileImage: String,
+    gender: {
+      type: String,
+      enum: ["Male", "Female"],
+    },
     roles: {
       type: String,
-      enum: ["Admin", "Instructor", "User"],
+      enum: ["Instructor", "User"],
       default: "User",
     },
   },
