@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const UserCredential = require("../models/userCredential.model");
 const { unAuthorized } = require("../utils/response/errors");
 
+// TODO : remember to return access token back to 6h
 exports.generateAccessToken = function (payload) {
   return jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
     algorithm: "HS256",

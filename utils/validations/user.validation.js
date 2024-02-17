@@ -1,6 +1,4 @@
 const { body, param } = require("express-validator");
-const slugify = require("slugify");
-const { v4: uuid } = require("uuid");
 const User = require("../../models/user.model");
 const validatorMiddleware = require("../../middleware/validatorMiddleware");
 
@@ -55,11 +53,7 @@ exports.updateUserValidator = [
   body("name")
     .optional()
     .isLength({ min: 3 })
-    .withMessage("Too short user name")
-    .custom((input, { req }) => {
-      req.body.slug = `${slugify(input)}-${uuid()}`;
-      return true;
-    }),
+    .withMessage("Too short user name"),
   body("email")
     .optional()
     .isEmail()
@@ -75,15 +69,28 @@ exports.updateUserValidator = [
     .optional()
     .isMobilePhone(["ar-EG"])
     .withMessage("phone number must be from Egypt"),
-  body("role")
+    body("gender")
     .optional()
     .custom((input) => {
-      return input === "Admin" || input === "Instructor" || input === "User";
+      return ["Male", "Female"].includes(input);
+    })
+    .withMessage("Invalid gender"),
+  body("roles")
+    .optional()
+    .custom((input) => {
+      return input === "Instructor" || input === "User" || input === "Admin";
     })
     .withMessage("role must be admin or instractor or user"),
+    body("bio")
+  .notEmpty()
+  .withMessage("Bio is required")
+  .isLength({ max: 500 })
+  .withMessage("Bio must be at most 500 characters"),
+  validatorMiddleware,
   body("profileImg").optional(),
   validatorMiddleware,
 ];
+
 
 exports.updateUserPasswordValidator = [
   param("id").isMongoId().withMessage("invalid mongo id"),
@@ -98,6 +105,7 @@ exports.updateUserPasswordValidator = [
     .custom((input, { req }) => {
       return req.body.password === input;
     }),
+    validatorMiddleware,
 ];
 
 exports.deleteUserValidator = [
@@ -109,33 +117,34 @@ exports.updateLoggedUserValidator = [
   body("name")
     .optional()
     .isLength({ min: 3 })
-    .withMessage("Too short user name")
-    .custom((input, { req }) => {
-      req.body.slug = `${slugify(input)}-${uuid()}`;
-      return true;
-    }),
+    .withMessage("Too short user name"),
   body("email")
     .optional()
     .isEmail()
-    .withMessage("email must be valid")
+    .withMessage("Email must be valid")
     .custom((val) =>
       User.findOne({ email: val }).then((user) => {
         if (user) {
-          return Promise.reject(new Error("E-mail already in user"));
+          return Promise.reject(new Error("Email already in use"));
         }
       })
     ),
   body("phone")
     .optional()
     .isMobilePhone(["ar-EG"])
-    .withMessage("phone number must be from Egypt"),
-  body("role")
+    .withMessage("Phone number must be from Egypt"),
+  body("gender")
     .optional()
     .custom((input) => {
-      return input === "instractor" || input === "user";
+      return ["Male", "Female"].includes(input);
     })
-    .withMessage("role must be admin or instractor or user"),
-  body("profileImg").optional(),
+    .withMessage("Invalid gender"),
+  body("profileImage").optional(),
+  body("bio")
+  .notEmpty()
+  .withMessage("Bio is required")
+  .isLength({ max: 500 })
+  .withMessage("Bio must be at most 500 characters"),
   validatorMiddleware,
 ];
 
@@ -156,4 +165,5 @@ exports.updateLoggedUserPasswordValidator = [
     .custom((input, { req }) => {
       return req.body.password === input;
     }),
+    validatorMiddleware,
 ];
