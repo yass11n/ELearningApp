@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema(
     bio: String,
     phone: String,
     profileImage: String,
+    jobTitle: String,
+    jobDescription: String,
+    facebookUrl: String,
+    linkedinUrl: String,
+    instagramUrl: String,
     gender: {
       type: String,
       enum: ["Male", "Female"],

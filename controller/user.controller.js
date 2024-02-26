@@ -22,7 +22,6 @@ const {
 } = require("../services/file-upload.service");
 
 const { getAll, getOne } = require("../services/factory.service");
-const Instructor = require("../models/instructor.model");
 const UserCredentials = require("../models/userCredential.model");
 
 exports.uploadProfileImage = uploadSingle("profileImage");
@@ -31,7 +30,7 @@ exports.resizeProfileImage = asyncHandler(async (req, res, next) => {
   const filename = `user-${uuid()}-${Date.now()}.jpeg`;
 
   if (req.file) {
-    if (!req.file.mimetype.startsWith("image")) {
+    if (!req.file.mimetype.startsWith("image") && req.file.mimetype !==  'application/octet-stream') {
       return next(validationError({ message: "Only image files are allowed" }));
     }
 
@@ -141,6 +140,21 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
     if (req.body.profileImage  !== existingUser.profileImage) {
       updateObject.profileImage = req.body.profileImage;
     }
+    if (req.body.jobTitle !== existingUser.jobTitle) {
+      updateObject.jobTitle = req.body.jobTitle;
+    }
+    if (req.body.jobDescription !== existingUser.jobDescription) {
+      updateObject.jobDescription = req.body.jobDescription;
+    }
+    if (req.body.facebookUrl !== existingUser.facebookUrl) {
+      updateObject.facebookUrl = req.body.facebookUrl;
+    }
+    if (req.body.linkedinUrl !== existingUser.linkedinUrl) {
+      updateObject.linkedinUrl = req.body.linkedinUrl;
+    }
+    if (req.body.instagramUrl !== existingUser.instagramUrl) {
+      updateObject.instagramUrl = req.body.instagramUrl;
+    }
 
     // 5- Update user by id with the constructed update object
     const updatedUser = await User.findByIdAndUpdate(
@@ -152,7 +166,7 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
     );
 
     // 6- Send response with the updated user profile
-    const { statusCode, body } = success({ data: updateObject });
+    const { statusCode, body } = success({ data: updatedUser });
     res.status(statusCode).json(body);
   } catch (error) {
     next(error);
@@ -209,11 +223,8 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
 
   // 3- delete user credentials
   await UserCredential.findOneAndDelete({ user: req.params.id });
-  
-  // 4- delete instructor page
-  await Instructor.findOneAndDelete({ user: req.params.id });
 
-  // 5- send response back
+  // 4- send response back
   const { statusCode, body } = success({
     message: "user deleted successfully",
   });
@@ -288,8 +299,8 @@ exports.updateLoggedUserPassword = asyncHandler(async (req, res, next) => {
  * @access protected [user]
  */
 exports.deleteLoggedUser = asyncHandler(async (req, res) => {
-  // 1- set active state to false for user
   
+  // 1- set active state to false for user
   await UserCredential.findOneAndUpdate(
     { user: req.user._id },
     {
@@ -298,13 +309,12 @@ exports.deleteLoggedUser = asyncHandler(async (req, res) => {
     }
   );
 
-  // 2- send response back
+  // 3- send response back
   const { statusCode, body } = success({
     message: "account closed successfully",
   });
   res.status(statusCode).json(body);
 });
-
 
 // exports.updateUser = asyncHandler(async (req, res, next) => {
 //   // 1- update userCredentials for provider id and return data after update(new one) 

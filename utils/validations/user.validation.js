@@ -141,12 +141,60 @@ exports.updateLoggedUserValidator = [
     .withMessage("Invalid gender"),
   body("profileImage").optional(),
   body("bio")
+  .optional()
   .notEmpty()
   .withMessage("Bio is required")
   .isLength({ max: 500 })
   .withMessage("Bio must be at most 500 characters"),
+  body("jobTitle").
+        optional().
+        notEmpty().
+        withMessage("Job Title is required").
+        isLength({ min: 3 }).
+        withMessage("too short title"),
+    body("jobDescription").
+        notEmpty().
+        withMessage("Job description is required").
+        isLength({ min: 5 }).
+        withMessage("too short description").
+        optional(),
+        body("facebookUrl")
+        .optional()
+        .custom((value) => {
+          if (value && !isValidUrl(value)) {
+            throw new Error('Invalid Facebook URL');
+          }
+          return true;
+        }),
+    
+      body("linkedinUrl")
+        .optional()
+        .custom((value) => {
+          if (value && !isValidUrl(value)) {
+            throw new Error('Invalid LinkedIn URL');
+          }
+          return true;
+        }),
+    
+      body("instagramUrl")
+        .optional()
+        .custom((value) => {
+          if (value && !isValidUrl(value)) {
+            throw new Error('Invalid Instagram URL');
+          }
+          return true;
+        }),
   validatorMiddleware,
 ];
+// Function to check if a given string is a valid URL
+const isValidUrl = (url) => {
+  try {
+    new URL(url);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
 
 exports.updateLoggedUserPasswordValidator = [
   body("oldPassword")

@@ -9,9 +9,11 @@ const filter = function (req, file, cb) {
   const allowedTypes = [
     "image/jpeg",
     "image/png",
+    "image/jpg",
     "video/mp4",
     "application/pdf",
     "application/vnd.ms-powerpoint",
+    'application/octet-stream'
   ];
 
   // Check if the file type is allowed
@@ -22,7 +24,7 @@ const filter = function (req, file, cb) {
     cb(
       validationError({
         message:
-          "Invalid file type. Only JPEG, PNG, MP4, PDF, and PPT files are allowed.",
+          "Invalid file type. Only JPEG, JPG, PNG, MP4, PDF, and PPT files are allowed.",
       }),
       false
     );

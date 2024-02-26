@@ -10,7 +10,10 @@ const categorySchema = new mongoose.Schema(
         maxlength: [32, 'Too long category name'],
       },
       // Add a reference to the Course model
-      courses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course.model' }],
+      courses: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Course',
+      }],
     },
     { timestamps: true }
   );

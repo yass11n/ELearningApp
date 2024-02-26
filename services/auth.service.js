@@ -84,6 +84,5 @@ exports.allowedRoles = (...roles) =>
     // check if user role is allowed
     if (!roles.includes(req.user.roles))
       next(unAuthorized({ message: "access denied" }));
-
     next();
   });
