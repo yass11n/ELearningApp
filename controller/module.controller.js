@@ -1,8 +1,7 @@
- const asyncHandler = require("express-async-handler");
+const asyncHandler = require("express-async-handler");
 
-const Module = require('../models/module.model');
-const { validationResult } = require('express-validator');
-
+const Module = require('../models/Module.model');
+const {uploadMix, uploadFilesToCloudinary} = require("../services/file-upload.service")
 
 const {
     recordNotFound,
@@ -10,32 +9,35 @@ const {
 const { success } = require("../utils/response/response");
 
 
+const uploadModuleVideos = uploadMix([{name:"file"}])
 
+const uploadVideosToCloud = asyncHandler(async(req,res,next)=>{
 
-/**
- * @description create new course module
- * @route POST /api/v1/coursemodule
- * @access private [Instructor, Admin]
- */
-const createModule = async (req, res) => {
-  const { name, videos } = req.body;
+  if(req.files.file){
+    req.body.videos =[];
+    const veds = req.files.file
 
-  try {
-    // Validate request body
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(422).json({ errors: errors.array() });
-    }
-
-    // Create a new module
-    const newModule = new Module({
-      name,
-      videos,
+    const uploadPromises = veds.map((v) => {
+      console.log("hello", v);
+      return uploadFilesToCloudinary(v.buffer, "modules").then((result) => {
+        console.log("ioioi");
+        console.log(result, v);
+        req.body.videos.push({file: result.secure_url, filename: result.public_id});
+      });
     });
+    await Promise.all(uploadPromises);
+  }
+  next();
+})
 
-    // Save the module to the database
+const createModule = async (req, res) => {
+  try {
+
+    console.log(req.body);
+    const { name, videos } = req.body;
+
+    const newModule = new Module({ name, videos });
     const savedModule = await newModule.save();
-
     res.status(200).json(savedModule);
   } catch (error) {
     console.error(error);
@@ -139,4 +141,6 @@ module.exports = {
   getModuleById,
   updateModule,
   deleteModule,
+  uploadModuleVideos,
+  uploadVideosToCloud
 };

@@ -7,7 +7,7 @@ const moduleSchema = new mongoose.Schema({
     required: true,
   },
   videos: [{
-    name: {
+    filename: {
       type: String,
       required: true,
     },
@@ -16,7 +16,6 @@ const moduleSchema = new mongoose.Schema({
       required: true,
     },
   }],
-  // You can add more fields as needed
 });
 
 const Module = mongoose.model('Module', moduleSchema);

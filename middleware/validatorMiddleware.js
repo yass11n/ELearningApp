@@ -7,7 +7,7 @@ const validatorMiddleware = (req, res, next) => {
   if (!errors.isEmpty()) {
     next(validationError({ data: errors.array() }));
   }
-   console.log(errors.array);
+   console.log(errors.stack);
   next();
 };
 

@@ -1,4 +1,5 @@
 const multer = require("multer");
+const { v4: uuid } = require("uuid");
 const cloudinary = require("../config/cloudinary");
 
 const { validationError } = require("../utils/response/errors");
@@ -43,6 +44,25 @@ exports.uploadToCloudinary = async (fileBuffer, filename, folder = "") => {
       .upload_stream(
         {
           public_id: filename,
+          folder: folder,
+          resource_type: "auto",
+        },
+        (err, uploadResult) => {
+          return resolve(uploadResult);
+        }
+      )
+      .end(fileBuffer);
+  });
+};
+
+
+exports.uploadFilesToCloudinary = async (fileBuffer, folder = "") => {
+  return await new Promise((resolve) => {
+    const pk = `module-${uuid()}-${Date.now()}`;
+    cloudinary.uploader
+      .upload_stream(
+        {
+          public_id: pk,
           folder: folder,
           resource_type: "auto",
         },

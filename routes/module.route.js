@@ -8,7 +8,9 @@ const {
     deleteModule ,
     getAllModules , 
     getModuleById ,
-    updateModule 
+    updateModule ,
+    uploadModuleVideos,
+    uploadVideosToCloud
     } = require("../controller/module.controller");
 
 const { protect, allowedRoles } = require("../services/auth.service");
@@ -30,7 +32,7 @@ router.use(allowedRoles("Instructor", "Admin"));
 
 router.route("/")
 .get(getAllModules)
-.post(createModuleValidator , createModule);
+.post(uploadModuleVideos,uploadVideosToCloud ,createModuleValidator , createModule);
 
 router.route("/:id")
 .get(getModuleValidator ,getModuleById)

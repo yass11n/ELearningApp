@@ -60,7 +60,10 @@ const courseSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  
+  isFree: {
+    type: Boolean,
+    default: false, // Default to purchased
+  },
 });
 
 const Course = mongoose.model('Course', courseSchema);

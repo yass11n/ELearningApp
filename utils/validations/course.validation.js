@@ -1,5 +1,5 @@
 const { body, param } = require("express-validator");
-const Course = require("../../models/Course.model");
+const Category = require("../../models/Category.model");
 const validatorMiddleware = require("../../middleware/validatorMiddleware");
 
 const createCourseValidator = [
@@ -19,7 +19,7 @@ const createCourseValidator = [
     .isMongoId()
     .withMessage("Invalid category ID")
     .custom(async (categoryId) => {
-      const category = await Course.findById(categoryId);
+      const category = await Category.findById(categoryId);
       if (!category) {
         throw new Error("Category not found");
       }
@@ -89,7 +89,7 @@ const updateCourseValidator = [
     .withMessage("Invalid category ID")
     .custom(async (categoryId) => {
       if (categoryId) {
-        const category = await Course.findById(categoryId);
+        const category = await Category.findById(categoryId);
         if (!category) {
           throw new Error("Category not found");
         }
