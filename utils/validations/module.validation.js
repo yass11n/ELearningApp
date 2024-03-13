@@ -1,19 +1,29 @@
 const { body, param } = require("express-validator");
 const validatorMiddleware = require("../../middleware/validatorMiddleware");
-
+const Category = require("../../models/Category.model");
+//we wont be using it, but check it anyway
 exports.createModuleValidator = [
-  body("name")
+  body("file")
     .notEmpty()
-    .withMessage("Module name is required"),
-  body("videos")
-    .isArray()
-    .withMessage("Videos must be an array")
-    .optional(),
+    .withMessage("file is required"),
+  body("sectionId")
+    .notEmpty()
+    .withMessage("sectionId is required")
+    .custom(async (categoryId) => {
+      if (categoryId) {
+        const category = await Category.findById(categoryId);
+        if (!category) {
+          throw new Error("Category not found");
+        }
+      }
+    }),
   validatorMiddleware,
 ];
 
 exports.getModuleValidator = [
-  param("id").isMongoId().withMessage("Invalid module ID"),
+  param("id")
+  .isMongoId()
+  .withMessage("Invalid module ID"),
   validatorMiddleware,
 ];
 
@@ -23,9 +33,7 @@ exports.updateModuleValidator = [
     .notEmpty()
     .withMessage("Module name is required"),
   body("videos")
-    .optional()
-    .isArray()
-    .withMessage("Videos must be an array"),
+    .optional(),
   validatorMiddleware,
 ];
 

@@ -1,50 +1,80 @@
 const asyncHandler = require("express-async-handler");
-
+const ffmpeg = require('fluent-ffmpeg');
 const Module = require('../models/Module.model');
-const {uploadMix, uploadFilesToCloudinary} = require("../services/file-upload.service")
+const { uploadMix, uploadFilesToCloudinary } = require("../services/file-upload.service")
+const factory = require("../services/factory.service");
 
 const {
-    recordNotFound,
-  } = require("../utils/response/errors");
+  recordNotFound,
+} = require("../utils/response/errors");
 const { success } = require("../utils/response/response");
 
 
-const uploadModuleVideos = uploadMix([{name:"file"}])
+const uploadModuleVideos = uploadMix([{ name: "file" }])
 
-const uploadVideosToCloud = asyncHandler(async(req,res,next)=>{
-
-  if(req.files.file){
-    req.body.videos =[];
+const uploadVideosToCloud = asyncHandler(async (req, res, next) => {
+  if (req.files.file) {
+    console.log("yess");
+    req.body.file = [];
     const veds = req.files.file
+    console.log(veds);
 
     const uploadPromises = veds.map((v) => {
       console.log("hello", v);
       return uploadFilesToCloudinary(v.buffer, "modules").then((result) => {
         console.log("ioioi");
         console.log(result, v);
-        req.body.videos.push({file: result.secure_url, filename: result.public_id});
+        //set the path to secure_url and filename to public_id from result
+        req.body.file.push({ path: result.secure_url, filename: result.public_id });
+        console.log("donee");
       });
     });
     await Promise.all(uploadPromises);
+
   }
   next();
 })
 
-const createModule = async (req, res) => {
+
+/**
+ * @description create coursesmodules
+ * @route POST /api/v1/coursemodule
+ * @access private [Instructor, Admin]
+ */
+const createModule = async (file) => {
+
   try {
+    const result = await uploadFilesToCloudinary(file.buffer, "modules");
+    console.log("result: ", result);
 
-    console.log(req.body);
-    const { name, videos } = req.body;
+    if (result && result.public_id && result.secure_url) {
 
-    const newModule = new Module({ name, videos });
-    const savedModule = await newModule.save();
-    res.status(200).json(savedModule);
+      //continue later
+      // Get the video duration using fluent-ffmpeg
+      //const Duration = await getVideoDuration(result.secure_url);
+      //console.log("duration in the create")
+      //  console.log(Duration)
+      // Create the module in the database
+      const newModule = await Module.create({
+        file: {
+          filename: result.public_id,
+          path: result.secure_url,
+        },
+        //duration: Duration
+      });
+
+      return newModule;
+    } else {
+      // Handle the case where the upload to Cloudinary did not succeed
+      console.error("Failed to upload file to Cloudinary");
+      return null;
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    console.error("Error creating module:", error);
+    return null;
   }
-};
 
+};
 
 
 /**
@@ -52,15 +82,7 @@ const createModule = async (req, res) => {
  * @route GET /api/v1/coursemodule
  * @access private [Instructor, Admin]
  */
-const getAllModules = asyncHandler( async (req, res) => {
-
-    const modules = await Module.find();
-
-    const {body , statusCode } = success({
-        data : {results : modules }, });
-        res.status(statusCode).json(body);
-
-});
+const getAllModules = factory.getAll(Module);
 
 
 /**
@@ -68,71 +90,57 @@ const getAllModules = asyncHandler( async (req, res) => {
  * @route GET /api/v1/coursemodule/:id
  * @access private [Instructor, Admin]
  */
-const getModuleById = asyncHandler( async (req, res) => {
-    
-    const moduleId = req.params.id;
-
-    const module = await Module.findById(moduleId);
-
-    // Check if the module exists
-    if (!module) {
-      return res.status(404).json({ message: `Module with id ${moduleId} not found` });
-    }
-
-    const {body , statusCode } = success({
-        data : {results : module }, });
-        res.status(statusCode).json(body);
-});
-
+const getModuleById = factory.getOne(Module);
 
 /**
  * @description update module by id
  * @route PUT /api/v1/coursemodule/:id
  * @access private [Instructor, Admin]
- */ 
-const updateModule = asyncHandler (async (req, res) => {
-  const moduleId = req.params.id;
-  const updatedModuleData = req.body;
+ */
+// factory.updateOne(Module);
+const updateModule = asyncHandler(async (req, res, next) => {
+    const moduleId = req.params.id;
+    const updatedModuleData = req.body;
 
-  try {
-    // Update the module
-    const updatedModule = await Module.findByIdAndUpdate(moduleId, updatedModuleData, { new: true });
+    try {
+      // Update the module
+      const updatedModule = await Module.findByIdAndUpdate(moduleId, updatedModuleData, { new: true });
 
-    // Check if the module exists
-    if (!updatedModule) {
-      return res.status(404).json({ message: `Module with id ${moduleId} not found` });
+      // Check if the module exists
+      if (!updatedModule) {
+        return next(recordNotFound({ message: `user with id ${req.params.id} not found` }))
+      }
+      const { statusCode, body } = success({ data: updatedModule })
+      res.status(statusCode).json(body);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal Server Error' });
     }
-
-    res.status(200).json(updatedModule);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Internal Server Error' });
-  }
-});
+  });
 
 /**
  * @description delete module by id
  * @route DELETE /api/v1/coursemodule/:id
  * @access private [Instructor, Admin]
  */
-const deleteModule = async (req, res, next) => {
-    // Delete the module
-    const deletedModule = await Module.findByIdAndDelete(req.params.id);
+const deleteModule = factory.deleteOne(Module);
 
-    // Check if the module exists
-    if(!deletedModule){
-        next(
-            recordNotFound({
-              message: `course with id ${req.params.id} not found`,
-            })
-          );
-        }
-
-    //  send response back
-        const { statusCode, body } = success({
-            message: "course deleted successfully",
-          });
-          res.status(statusCode).json(body);
+// Function to get video duration using fluent-ffmpeg
+const getVideoDuration = (videoUrl) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(videoUrl, (err, metadata) => {
+      console.log("yes we in")
+      if (err) {
+        reject(err);
+        console.log(err)
+      } else {
+        const duration = metadata.format.duration || 0;
+        console.log("duration")
+        console.log(duration)
+        resolve(duration);
+      }
+    });
+  });
 };
 
 module.exports = {
@@ -142,5 +150,6 @@ module.exports = {
   updateModule,
   deleteModule,
   uploadModuleVideos,
-  uploadVideosToCloud
+  uploadVideosToCloud,
+  getVideoDuration
 };

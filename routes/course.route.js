@@ -10,8 +10,11 @@ const {
     updateCourse,
     getCourseById,
     resizethumbnailImg,
-    uploadthumbnailImg,
-    videotrailer
+    uploadtBoth,
+    addCourseToWishlist,
+    getLoggedUserWishlist,
+    getCoursesInCategory,
+    getCoursesByInstructor
 } = require("../controller/course.controller");
 
 const { protect, allowedRoles } = require("../services/auth.service");
@@ -21,30 +24,48 @@ const {
     deleteCourseValidator,
     getCourseValidator,
     updateCourseValidator,
- } = require("../utils/validations/course.validation"); 
+} = require("../utils/validations/course.validation");
 
 const router = Router();
 
-    // protected
-    router.use(protect);
 
-    // private [Instructor]
-    router.use(allowedRoles("Instructor", "Admin"));
-    
-    router.route("/")
+
+// protected
+router.use(protect);
+
+router.route("/categoriesId/:categoryId").get(getCoursesInCategory)
+
+// user & instructor 
+router.route("/wishlist").put(addCourseToWishlist).get(getLoggedUserWishlist);
+
+// private [Instructor]
+router.use(allowedRoles("Instructor", "Admin"));
+
+router.route("/getinstructorcourse").get(getCoursesByInstructor);
+
+router.route("/")
     .get(getAllCourses)
     .post(
-        uploadthumbnailImg,
-        resizethumbnailImg,
-        videotrailer,
+        //uploadtBoth,
+        //resizethumbnailImg,
         createCourseValidator,
         createCourse);
-    
-    router.route("/:id")
-    .get(getCourseValidator , getCourseById)
-    .delete(deleteCourseValidator , deleteCourse)
-    .put(updateCourseValidator , updateCourse);    
-    
+
+router.route("/:id")
+    .get(
+        getCourseValidator,
+        getCourseById)
+    .delete(
+        deleteCourseValidator,
+        deleteCourse
+    )
+    .put(
+        uploadtBoth,
+        resizethumbnailImg,
+        updateCourseValidator,//error 
+        updateCourse
+    );
+
 
 
 module.exports = router;

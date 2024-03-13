@@ -2,67 +2,73 @@
 const mongoose = require('mongoose');
 
 const courseSchema = new mongoose.Schema({
-  instructor : {
+  instructor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
   },
   title: {
     type: String,
-    required: true,
+    // required: true,
   },
   subTitle: {
     type: String,
-    required: true,
+    // required: true,
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Category',
-    required: true,
+    //required: true,
   },
-  modules: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Module',
-  }],
   language: {
     type: String,
-    required: true,
+    //required: true,
   },
   level: {
-    type: Number,
-    required: true,
+    type: String,
+    enum: ["beginner", "intermidiate", "advanced", "Proficient"],
   },
   durationHours: {
     type: Number,
-    required: true,
+    min: 0,
   },
+  // first page 
+
   thumbnail: {
     type: String, // Assuming the image will be stored as a URL
-    required: true,
+    //required: true,
   },
   videoTrailer: {
     type: String, // Assuming the video trailer will be stored as a URL
-    required: true,
+    //required: true,
   },
   courseDescription: {
     type: String,
-    required: true,
+    //required: true,
   },
   whatWillBeTaught: {
     type: String,
-    required: true,
+    //required: true,
   },
   targetAudience: {
     type: String,
-    required: true,
+   // required: true,
   },
   requirements: {
     type: String,
-    required: true,
+    //required: true,
   },
-  isFree: {
-    type: Boolean,
-    default: false, // Default to purchased
+  // second page
+
+  sections: [{ type: mongoose.Types.ObjectId, ref: "Section" }],
+  
+  ratingsAverage: {
+    type: Number,
+    min: [1, "Rating must be above or equal 1.0"],
+    max: [5, "Rating must be below or equal 5.0"],
+  },
+  ratingsQuantity: {
+    type: Number,
+    default: 0,
   },
 });
 

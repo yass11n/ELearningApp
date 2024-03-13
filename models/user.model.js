@@ -29,6 +29,12 @@ const userSchema = new mongoose.Schema(
       enum: ["Instructor", "User"],
       default: "User",
     },
+    wishlist: [{ type : mongoose.Schema.Types.ObjectId, ref:"Course"}],
+    // Add a reference to the Course model
+    courses: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+    }],
   },
   {
     timestamps: true,
