@@ -26,15 +26,19 @@ const userSchema = new mongoose.Schema(
     },
     roles: {
       type: String,
-      enum: ["Instructor", "User"],
+      enum: ["Instructor", "User","Admin"],
       default: "User",
     },
-    wishlist: [{ type : mongoose.Schema.Types.ObjectId, ref:"Course"}],
+    wishlist: [{
+      type: mongoose.Schema.Types.ObjectId
+      , ref: "Course"
+    }],
     // Add a reference to the Course model
     courses: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Course',
     }],
+    cart: { type: mongoose.Schema.Types.ObjectId, ref: 'Cart' },
   },
   {
     timestamps: true,

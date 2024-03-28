@@ -1,4 +1,5 @@
 const asyncHandler = require("express-async-handler");
+// const mongoose = require('mongoose');
 const sharp = require("sharp");
 const { v4: uuid } = require("uuid");
 // const factory = require("../services/factory.service")
@@ -9,13 +10,15 @@ const {
 const { success } = require("../utils/response/response");
 const Course = require('../models/Course.model');
 const Category = require('../models/Category.model'); // Import your Category model
+const Section = require('../models/section.model'); // Import your Category model Module
+const Module = require('../models/Module.model'); // Import your Category model Module
+const User = require("../models/user.model");
 
 const {
-  // uploadSingle,
   uploadToCloudinary,
   uploadMix,
 } = require("../services/file-upload.service");
-const User = require("../models/user.model");
+
 
 //handles uploading thumbnail and vedioTrailer
 const uploadtBoth = uploadMix([{ name: 'thumbnail', maxCount: 1 }, { name: 'videoTrailer', maxCount: 1 }]);
@@ -55,6 +58,7 @@ const resizethumbnailImg = asyncHandler(async (req, res, next) => {
       }
     }
 
+
     // Check if a video trailer file is provided in the request
     if (req.files.videoTrailer) {
       // Upload the video trailer file to Cloudinary
@@ -83,27 +87,28 @@ const resizethumbnailImg = asyncHandler(async (req, res, next) => {
   }
 });
 
-
 /**
  * @description create new course
  * @route POST /api/v1/course
  * @access private [Instructor, Admin]
  */
 const createCourse = asyncHandler(async (req, res, next) => {
+
   try {
+    // create new course with title, subTitle, category, language, level and instructor fields
     // 1- Extract required fields from the request body
-    const { title, subTitle, category, language, level, instructor } = req.body;
-    
+    const { title, subTitle, category, language, level } = req.body;
+    const { _id } = req.user;//instrucotr id
+    console.log(_id)
     // 2- Create the course using the extracted fields
     const newCourse = await Course.create({
-      title,
+      title: title,
       subTitle,
       category,
       language,
       level,
-      instructor,
+      instructor: _id
     });
-
     // 3- Update the category with the new course
     const updatedCategory = await Category.findByIdAndUpdate(
       category,
@@ -111,19 +116,97 @@ const createCourse = asyncHandler(async (req, res, next) => {
       { new: true }
     );
 
-    // 4- Check if the instructor is an 'Instructor' and update the courses
-    const instructorRole = await User.findById(instructor, 'roles');
+    // 4- get the instructor by id
+    const Instructor = await User.findById(_id);
+    console.log(Instructor);
+    // 5- get instructor courses
+    const instructorCourses = Instructor.courses;
 
-    if (instructorRole.roles === 'Instructor') {
-      const updatedInstructor = await User.findByIdAndUpdate(
-        instructor,
-        { $push: { courses: { _id: newCourse._id, visible: true } } },
-        { new: true }
-      );
+    // 6- push the new course id into instructor courses
+    instructorCourses.push(newCourse._id);
+
+    // 7- save the instructor
+    Instructor.save();
+
+    // 8- Send success response
+    const { statusCode, body } = success({ data: newCourse });
+    res.status(statusCode).json(body);
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * @description get all courses with selected fields
+ * @route GET /api/v1/course
+ * @access private [Instructor, Admin]
+ */
+const getAllCourses = asyncHandler(async (req, res) => {
+  const courses = await Course.aggregate([
+    {
+      $lookup: {// used to join the users collection and the instructor filed
+        from: 'users', // Assuming 'users' is the collection name for users
+        localField: 'instructor',
+        foreignField: '_id',
+        as: 'instructorInfo',
+      },
+    },
+    {
+      $project: {//used to project the selected fileds [_id,title,thumbnail,price,ratingAverage,instructorName]
+        _id: 1,
+        title: 1,
+        thumbnail: 1,
+        price: { $ifNull: ['$price', 0] }, // Initialize price as 0 if it's null
+        ratingsAverage: { $ifNull: ['$ratingsAverage', 0] }, // Initialize ratingsAverage as 0 if it's null
+        instructorName: { $arrayElemAt: ['$instructorInfo.name', 0] }, // Assuming 'name' is the field in User model for instructor's name
+      },
+    },
+  ]);
+
+  const { body, statusCode } = success({
+    data: { results: courses },
+  });
+  res.status(statusCode).json(body);
+});
+
+
+/**
+ * @description get course by id
+ * @route GET /api/v1/course/:id
+ * @access private [Instructor, Admin]
+ */
+const getCourseById = asyncHandler(async (req, res, next) => {
+  try {
+    const courseId = req.params.id;
+
+    // Find the course by ID and populate the 'modules' field with the complete module objects
+    const course = await Course.findById(courseId).populate({
+      path: 'sections',
+      populate: {
+        path: 'modules',
+        model: 'Module',
+        select: 'name _id isFree', // Specify the fields you want to include in the populated modules
+      },
+    });
+
+    if (!course) {
+      return next(recordNotFound({ message: `Course with id ${req.params.id} not found` }));
     }
 
-    // 5- Send success response
-    const { statusCode, body } = success({ data: newCourse });
+    // Extract the populated modules from each section and format them as desired
+    const formattedModules = [];
+    course.sections.forEach(section => {
+      section.modules.forEach(module => {
+        formattedModules.push({ name: module.name, id: module._id });
+      });
+    });
+
+    // Replace the original modules array in the course object with the formatted one
+    course.modules = formattedModules;
+
+    const { body, statusCode } = success({
+      data: { results: course },
+    });
     res.status(statusCode).json(body);
   } catch (error) {
     next(error);
@@ -132,45 +215,15 @@ const createCourse = asyncHandler(async (req, res, next) => {
 
 
 /**
- * @description get all courses
- * @route GET /api/v1/course
- * @access private [Instructor, Admin]
- */
-const getAllCourses = asyncHandler(async (req, res) => {
-
-  const courses = await Course.find().populate('category').populate('instructor').populate('sections');
-
-  const { body, statusCode } = success({
-    data: { results: courses },
-  });
-  res.status(statusCode).json(body);
-});
-
-//waiting...
-/**kl
- * @description get course by id
- * @route GET /api/v1/course/:id
- * @access private [Instructor, Admin]
- */
-const getCourseById = asyncHandler(async (req, res) => {
-  const courseId = req.params.id;
-
-  const course = await Course.findById(courseId).populate('category').populate('instructor').populate('sections');
-
-  const { body, statusCode } = success({
-    data: { results: course },
-  });
-  res.status(statusCode).json(body);
-});
-
-/**
  * @description update course by id
  * @route PUT /api/v1/course/:id
  * @access private [Instructor, Admin]
  */
-const updateCourse = asyncHandler(async (req, res, next) => {  
+const updateCourse = asyncHandler(async (req, res, next) => {
+  //update course with thumbnails, trailer,courseDescription, whatWillBeTaught, targetAudience, requirements
   const courseId = req.params.id;
   try {
+    console.log(courseId);
     // 1- Check if the course exists
     if (!courseId) {
       return next(
@@ -185,6 +238,11 @@ const updateCourse = asyncHandler(async (req, res, next) => {
 
     if (req.body.instructor !== courseId.instructor) {
       updatedCourseData.instructor = req.body.instructor;
+      // push this course to the instructor courses
+      await User.updateMany(
+        { _id: req.body.instructor },
+        { $push: { courses: courseId } }
+      );
     }
     if (req.body.title !== courseId.title) {
       updatedCourseData.title = req.body.title;
@@ -194,6 +252,11 @@ const updateCourse = asyncHandler(async (req, res, next) => {
     }
     if (req.body.category !== courseId.category) {
       updatedCourseData.category = req.body.category;
+      // push this course to the category courses
+      await Category.updateMany(
+        { _id: req.body.category },
+        { $push: { courses: courseId } }
+      );
     }
     if (req.body.language !== courseId.language) {
       updatedCourseData.language = req.body.language;
@@ -223,6 +286,9 @@ const updateCourse = asyncHandler(async (req, res, next) => {
     if (req.body.requirements !== courseId.requirements) {
       updatedCourseData.requirements = req.body.requirements;
     }
+    if (req.body.ratingsAverage !== courseId.ratingsAverage) {
+      updatedCourseData.ratingsAverage = req.body.ratingsAverage;
+    }
     //3- Update course by id with the constructed update object
     const updatedData = await Course.findByIdAndUpdate(courseId, updatedCourseData, { new: true });
 
@@ -240,53 +306,106 @@ const updateCourse = asyncHandler(async (req, res, next) => {
  * @access private [Instructor, Admin]
  */
 const deleteCourse = asyncHandler(async (req, res, next) => {
-  // 1-delete course by id
-  const courseId = req.params.id;
-  const deletedCourse = await Course.findByIdAndDelete(courseId);
-  // 2- check if course exists
-  if (!deletedCourse) {
-    next(
-      recordNotFound({
-        message: `course with id ${req.params.id} not found`,
-      })
+  try {
+    // 1- get course id
+    const courseId = req.params.id;
+
+    // 2- Find the course by id
+    const deletedCourse = await Course.findById(courseId);
+
+
+    // 3- Check if course exists
+    if (!deletedCourse) {
+      return next(
+        recordNotFound({
+          message: `Course with id ${req.params.id} not found`,
+        })
+      );
+    }
+
+    // 4- Remove course from instructor's courses
+    await User.updateMany(
+      { courses: courseId },
+      { $pull: { courses: courseId } }
     );
+
+    // 5- Remove course from category's courses
+    await Category.updateMany(
+      { courses: courseId },
+      { $pull: { courses: courseId } }
+    );
+
+    // 7- Delete sections associated with the course
+    //const Sections = deletedCourse.sections;
+
+    // 8 - iterate over all sections
+    const sections = deletedCourse.sections;
+    for (const sectionId of sections) {
+      // 9- get section
+      const sec = await Section.findById(sectionId);
+      // 10- get section's modules
+
+      if (sec) {
+        const secModules = sec.modules;
+        // 11- iterate through modules and delete each
+        for (const module of secModules) {
+          await Module.findByIdAndDelete(module);
+        }
+        // 12- delete section
+        await Section.findByIdAndDelete(sectionId)
+      }
+
+    }
+
+    // 13- delete course
+    await Course.findByIdAndDelete(courseId);
+
+    // 14- Send response
+    const { statusCode, body } = success({
+      message: "Course, associated modules, and sections deleted successfully",
+    });
+    res.status(statusCode).json(body);
+  } catch (error) {
+    next(error);
   }
-  // 3- send response back
-  const { statusCode, body } = success({
-    message: "course deleted successfully",
-  });
-  res.status(statusCode).json(body);
 });
 
-// @desc    Add course to wishlist
-// @route   PUT /api/v1/course/wishlist
-// @access  Protected/User
+/**
+ * @description Add course to wishlist
+ * @route PUT /api/v1/course/wishlist
+ * @access protected User
+ */
 const addCourseToWishlist = asyncHandler(async (req, res) => {
   const { _id } = req.user;
   const { courseId } = req.body;
 
+  // 1- get user by id
   const user = await User.findById(_id);
+  // 2- check if the course is already in wishlist
   const alreadyAdded = user.wishlist.find((id) => id.toString() === courseId);
 
   if (alreadyAdded) {
+    // remove the course from wishlist
     const updatedUser = await User.findByIdAndUpdate(
       _id,
       { $pull: { wishlist: courseId } },
       { new: true }
     );
-
+    // get response back
     const { statusCode, body } = success({
       message: 'Course removed successfully from your wishlist.',
       data: updatedUser.wishlist,
     });
     res.status(statusCode).json(body);
+
   } else {
+    // add course to wishlist
     const updatedUser = await User.findByIdAndUpdate(
       _id,
       { $push: { wishlist: courseId } },
       { new: true }
     );
-
+    // get response back
     const { statusCode, body } = success({
       message: 'Course added successfully to your wishlist.',
       data: updatedUser.wishlist,
@@ -295,62 +414,136 @@ const addCourseToWishlist = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    getuserwishlist
-// @route   GET /api/v1/course/wishlist
-// @access  Protected/User
+/**
+ * @description getuserwishlist
+ * @route GET /api/v1/course/wishlist
+ * @access protected User
+ */
 const getLoggedUserWishlist = asyncHandler(async (req, res) => {
+  // 1- get user by id
   const user = await User.findById(req.user._id).populate('wishlist');
-  
+
+  // 2- get response back
   const { statusCode, body } = success({
     message: 'User Wishlist:',
-    results : user.wishlist.length,
     data: user.wishlist
   });
   res.status(statusCode).json(body);
 });
 
-// @desc    get all courses to specific category
-// @route   GET /api/v1/course/categoriesId/:categoryId
-// @access  Protected/User
-const getCoursesInCategory = asyncHandler(async (req, res) => {
-  const categoryId = req.params.categoryId;
+/**
+ * @description get all courses to specific category
+ * @route GET /api/v1/course/categoriesId/:categoryId
+ * @access protected User
+ */
+const getCoursesInCategory = asyncHandler(async (req, res, next) => {//not finished yet
+  try {
+    // 1- get category by id
+    const categoryWithCourses = await Category.findById(req.params.categoryId);
+    console.log(categoryWithCourses);
+    // 2- check if the category exists
+    if (!categoryWithCourses || !categoryWithCourses.courses || categoryWithCourses.courses.length === 0) {
+      return next(recordNotFound({ message: `Courses not found for this category` }));
+    }
+    // 3- get the category courses
+    const courses = categoryWithCourses.courses;
 
-  // Find the category by ID and populate the 'courses' field to get course details
-  const categoryWithCourses = await Category.findById(categoryId).populate('courses');
+    // 4- get courses by id
+    const cours = await Course.findById(courses);
+    console.log(cours)
+    // 5- map through each course and get the id, title, thumbnail, price, ratingsAvaerage, and instructorName
+    const formattedCourses = courses.map(course => ({
+      _id: course,
+      title: cours.title,
+      thumbnail: cours.thumbnail,
+      price: cours.price || 0,
+      ratingsAverage: cours.ratingsAverage || 0,
+      //instructorName: instructor.name,
+    }));
 
-  if (!categoryWithCourses) {
-    res.status(404).json({ message: 'Category not found' });
-    return;
+    // 5- return response
+    const { statusCode, body } = success({
+      message: 'Instructor courses',
+      data: { results: formattedCourses },
+    });
+    res.status(statusCode).json(body);
+  } catch (error) {
+    next(error)
   }
 
-  // Extract courses from the populated field
-  const coursesInCategory = categoryWithCourses.courses;
-
-  const { statusCode, body } = success({
-    message: 'categoryCourses:',
-    data: coursesInCategory
-  });
-  res.status(statusCode).json(body);
 });
 
-// @desc    get courses to specific instructor
-// @route   GET /api/v1/course/getinstructorcourse
-// @access  Protected/User
-const getCoursesByInstructor = asyncHandler(async (req, res) => {
-    // Assuming that the _id of the instructor is stored in req.user._id
-    const instructorId = req.user._id;
+/**
+ * @description get courses by specific instructor with selected fields
+ * @route GET /api/v1/course/getinstructorcourse
+ * @access protected User
+ */
+const getCoursesByInstructor = asyncHandler(async (req, res, next) => {
+  try {
+    // get instructor id
+    const { _id } = req.user;
+    // 1- get instructor by id
+    const instructor = await User.findById(_id);
 
-    // Find courses where the instructor field matches the instructorId
-    const courses = await Course.find({ instructor: instructorId });
+    // 2- check if the instructor exists
+    if (!instructor || !instructor.courses || instructor.courses.length === 0) {
+      return next(recordNotFound({ message: `Courses not found for this instructor` }));
+    }
 
-    if (!courses || courses.length === 0) {
-      return res.status(404).json({ message: 'No courses found for this instructor' });
+    // 3- get the instructor courses
+    const courses = instructor.courses; // Array of courses for the instructor
+    console.log(courses)
+    // 4- get courses by id
+    const cours = await Course.findById(courses);
+    console.log(cours)
+    // 5- map through each course and get the id, title, thumbnail, price, ratingsAvaerage, and instructorName
+    const formattedCourses = courses.map(course => ({
+      _id: course,
+      title: cours.title,
+      thumbnail: cours.thumbnail,
+      price: cours.price || 0,
+      ratingsAverage: cours.ratingsAverage || 0,
+      instructorName: instructor.name,
+    }));
+    // 6- return response
+    const { statusCode, body } = success({
+      message: 'Instructor courses',
+      data: { results: formattedCourses },
+    });
+    res.status(statusCode).json(body);
+  } catch (error) {
+    next(error);
+  }
+});
+
+const clearCatogrySections = asyncHandler(async (req, res, next) => {
+  try {
+    const catogory = await Category.findById(req.params.id);
+
+    const courses = catogory.courses;
+    console.log(courses)
+
+    if (!courses) {
+      return next(recordNotFound({ message: 'Courses not found' }))
+    }
+
+    for (const coursesId of courses) {
+
+      await Category.updateMany(
+        { courses: coursesId },
+        { $pull: { courses: coursesId } }
+      );
+
     }
     const { statusCode, body } = success({
-      message: 'categoryCourses:',
-      data: courses
+      message: 'catogery courses pulled successfully',
+
     });
-    res.status(statusCode).json(body);  
+    res.status(statusCode).json(body);
+  }
+  catch (error) {
+    next(error);
+  }
 });
 
 module.exports = {
@@ -361,8 +554,9 @@ module.exports = {
   deleteCourse,
   resizethumbnailImg,
   uploadtBoth,
-addCourseToWishlist,
-getLoggedUserWishlist,
-getCoursesInCategory,
-getCoursesByInstructor
+  addCourseToWishlist,
+  getLoggedUserWishlist,
+  getCoursesInCategory,
+  getCoursesByInstructor,
+  clearCatogrySections
 };

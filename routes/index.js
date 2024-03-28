@@ -8,5 +8,7 @@ routes.use("/api/v1/category" , require("./category.route"));
 routes.use("/api/v1/course" , require("./course.route"));
 routes.use("/api/v1/coursemodule" , require("./module.route"));
 routes.use("/api/v1/section" ,require("./section.route"));
+routes.use("/api/v1/cart" ,require("./cart.route"));
+// routes.use("/api/v1/cart" ,require("./cart.route"));
 
 module.exports = routes;
