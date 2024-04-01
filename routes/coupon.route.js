@@ -1,20 +1,34 @@
 const { Router } = require("express");
-
 const {
+  createCoupon,
+  deleteCoupon,
   getCoupon,
   getCoupons,
-  createCoupon,
   updateCoupon,
-  deleteCoupon,
-} = require('../controller/coupon.controller');
-
-const { protect, allowedRoles } = require("../services/auth.service");
+} = require("../controller/coupon.controller");
+const {
+  createCouponValidator,
+  deleteCouponValidator,
+  getCouponValidator,
+  getCouponsValidator,
+  updateCouponValidator,
+} = require("../utils/validator/coupon.validator");
+const { protect, allowedRoles } = require("../services/auth");
 
 const router = Router();
 
-router.use(protect, allowedRoles('Admin', 'Instructor'));
+router.use(protect);
+router.use(allowedRoles("Admin" , "Instructor"));
 
-router.route('/').get(getCoupons).post(createCoupon);
-router.route('/:id').get(getCoupon).put(updateCoupon).delete(deleteCoupon);
+router
+  .route("/")
+  .post(createCouponValidator, createCoupon)
+  .get(getCouponsValidator, getCoupons);
+
+router
+  .route("/:id")
+  .get(getCouponValidator, getCoupon)
+  .put(updateCouponValidator, updateCoupon)
+  .delete(deleteCouponValidator, deleteCoupon);
 
 module.exports = router;

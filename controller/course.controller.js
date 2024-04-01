@@ -1,8 +1,9 @@
+//import ApiFeatures from '../services/api-features.service';
 const asyncHandler = require("express-async-handler");
-// const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const sharp = require("sharp");
 const { v4: uuid } = require("uuid");
-// const factory = require("../services/factory.service")
+const factory = require("../services/factory.service")
 const {
   recordNotFound,
   validationError,
@@ -109,6 +110,8 @@ const createCourse = asyncHandler(async (req, res, next) => {
       level,
       instructor: _id
     });
+
+    console.log(newCourse);
     // 3- Update the category with the new course
     const updatedCategory = await Category.findByIdAndUpdate(
       category,
@@ -180,7 +183,7 @@ const getCourseById = asyncHandler(async (req, res, next) => {
     const courseId = req.params.id;
 
     // Find the course by ID and populate the 'modules' field with the complete module objects
-    const course = await Course.findById(courseId).populate({
+    const course = await Course.findById(courseId).populate('instructor').populate({
       path: 'sections',
       populate: {
         path: 'modules',
@@ -222,8 +225,9 @@ const getCourseById = asyncHandler(async (req, res, next) => {
 const updateCourse = asyncHandler(async (req, res, next) => {
   //update course with thumbnails, trailer,courseDescription, whatWillBeTaught, targetAudience, requirements
   const courseId = req.params.id;
+  console.log(req.body.isFree)
   try {
-    console.log(courseId);
+
     // 1- Check if the course exists
     if (!courseId) {
       return next(
@@ -232,7 +236,6 @@ const updateCourse = asyncHandler(async (req, res, next) => {
         })
       );
     }
-
     //2- Construct an update object with only the allowed parameters
     const updatedCourseData = {};
 
@@ -252,6 +255,11 @@ const updateCourse = asyncHandler(async (req, res, next) => {
     }
     if (req.body.category !== courseId.category) {
       updatedCourseData.category = req.body.category;
+      //pull this course from previous category
+      // await Category.updateMany(
+      //   { _id: courseId.category },
+      //   { $pull: { courses: courseId } }
+      //);
       // push this course to the category courses
       await Category.updateMany(
         { _id: req.body.category },
@@ -312,7 +320,6 @@ const deleteCourse = asyncHandler(async (req, res, next) => {
 
     // 2- Find the course by id
     const deletedCourse = await Course.findById(courseId);
-
 
     // 3- Check if course exists
     if (!deletedCourse) {
@@ -440,26 +447,45 @@ const getCoursesInCategory = asyncHandler(async (req, res, next) => {//not finis
   try {
     // 1- get category by id
     const categoryWithCourses = await Category.findById(req.params.categoryId);
-    console.log(categoryWithCourses);
+    //console.log(categoryWithCourses);
     // 2- check if the category exists
     if (!categoryWithCourses || !categoryWithCourses.courses || categoryWithCourses.courses.length === 0) {
       return next(recordNotFound({ message: `Courses not found for this category` }));
     }
     // 3- get the category courses
+    // const courses = categoryWithCourses.courses;
+    
+    // // 4- get courses by id
+    // const cours = await Course.findById(courses);
+  
+    // // 5- map through each course and get the id, title, thumbnail, price, ratingsAvaerage, and instructorName
+    // const formattedCourses = courses.map(course => ({
+    //   _id: course,
+    //   title: cours.title,
+    //   thumbnail: cours.thumbnail,
+    //   price: cours.price || 0,
+    //   ratingsAverage: cours.ratingsAverage || 0,
+    //   //instructorName: instructor,
+    // }));
+    // 3- get the category courses
     const courses = categoryWithCourses.courses;
+    const formattedCourses = [];
 
-    // 4- get courses by id
-    const cours = await Course.findById(courses);
-    console.log(cours)
-    // 5- map through each course and get the id, title, thumbnail, price, ratingsAvaerage, and instructorName
-    const formattedCourses = courses.map(course => ({
-      _id: course,
-      title: cours.title,
-      thumbnail: cours.thumbnail,
-      price: cours.price || 0,
-      ratingsAverage: cours.ratingsAverage || 0,
-      //instructorName: instructor.name,
-    }));
+    for (const courseId of courses) {
+      // get course by id
+      const course = await Course.findById(courseId).populate('instructor', 'name'); // Populate instructor's name only
+
+      if (course) {
+        formattedCourses.push({
+          _id: course._id,
+          title: course.title,
+          thumbnail: course.thumbnail,
+          price: course.price || 0,
+          ratingsAverage: course.ratingsAverage || 0,
+          instructorName: course.instructor.name, // Include instructor's name in the output
+        });
+      }
+    }
 
     // 5- return response
     const { statusCode, body } = success({
@@ -472,7 +498,23 @@ const getCoursesInCategory = asyncHandler(async (req, res, next) => {//not finis
   }
 
 });
+// // 1- Find the category by ID and populate the 'courses' field to get course details
+// const categoryWithCourses = await Category.findById(req.params.categoryId).populate('courses');
 
+// // 2- check if categoryWithCourses exists
+// if (!categoryWithCourses) {
+//   return next(recordNotFound({ message: `Catogory not found` }))
+// }
+
+// // 3- Extract courses from the populated field
+// const coursesInCategory = categoryWithCourses.courses;
+
+// // 4- get response back
+// const { statusCode, body } = success({
+//   message: 'categoryCourses:',
+//   data: coursesInCategory
+// });
+// res.status(statusCode).json(body);
 /**
  * @description get courses by specific instructor with selected fields
  * @route GET /api/v1/course/getinstructorcourse
@@ -546,6 +588,78 @@ const clearCatogrySections = asyncHandler(async (req, res, next) => {
   }
 });
 
+/**
+ * @description post search for course
+ * @route get /api/v1/course/search
+ * @access protected User
+ */
+const searchCourse = asyncHandler(async (req, res, next) => {
+  try {
+    const courses = await Course.find().sort();
+
+
+    const { statusCode, body } = success({
+      message: 'catogery courses pulled successfully',
+      data: courses
+    });
+    res.status(statusCode).json(body);
+
+  }
+  catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * @description post search for course
+ * @route PUT /api/v1/calculate-duration/:id
+ * @access protected Instructor
+ */
+const coursDuration = asyncHandler(async (req, res, next) => {
+  try {
+    //get course by id
+    const course = await Course.findById(req.params.id)
+    console.log(course);
+    //check if course exists
+    if (!course) {
+      return next(recordNotFound({ message: 'course not found' }));
+    }
+    //check if there exists sections in this course
+    if (course.sections) {
+      //get course sections
+      const sectionsId = course.sections;
+      console.log(sectionsId)
+      // initiate couse duration
+      let hours = 0; let minutes = 0; let seconds = 0;
+      //iterate through each section
+      for (const section of sectionsId) {
+        // get section by id
+        console.log(section);
+        const sec = await Section.findById(section);
+        if (sec) {
+          // extract section duration
+          hours += sec.sectionDuration.hours;
+          minutes += sec.sectionDuration.minutes;
+          seconds += sec.sectionDuration.seconds;
+        }
+      }
+      //update course duration
+      course.duration.hours = hours;
+      course.duration.minutes = minutes;
+      course.duration.seconds = seconds;
+      // save course
+      await course.save();
+      //return response
+      const { statusCode, body } = success({
+        message: 'Course duration calculated successfully',
+        data: course.duration
+      });
+      res.status(statusCode).json(body);
+    }
+  } catch (err) {
+    next(err);
+  }
+})
 module.exports = {
   getAllCourses,
   getCourseById,
@@ -558,5 +672,7 @@ module.exports = {
   getLoggedUserWishlist,
   getCoursesInCategory,
   getCoursesByInstructor,
-  clearCatogrySections
+  searchCourse,
+  clearCatogrySections,
+  coursDuration
 };

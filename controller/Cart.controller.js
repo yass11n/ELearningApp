@@ -76,71 +76,23 @@ const addCourseToCart = asyncHandler(async (req, res) => {
 // @desc    Get logged user cart
 // @route   GET /api/v1/cart
 // @access  Private/User
-const getLoggedUserCart = asyncHandler(async (req, res) => {
-  // 1. Find the cart for the logged-in user
+const getLoggedUserCart = asyncHandler(async (req, res, next) => {
   const cart = await Cart.findOne({ user: req.user._id });
-
-  // 2. Check if cart exists
   if (!cart) {
-    // If cart does not exist, return a 404 error using recordNotFound
-    return recordNotFound({
-      message: `There is no cart for this user id: ${req.user._id}`,
-    });
+    return next(
+      recordNotFound({
+        message: `There is no cart for this user id : ${req.user._id}`,
+      })
+    );
   }
 
-  // 3. Check if cartItems array is empty
-  if (cart.cartItems.length === 0) {
-    // If cart exists but cartItems is empty, return a success response indicating an empty cart
-    const { body, statusCode } = success({
-      message: "Cart is empty",
-      data: {
-        totalCartPrice: 0, // Set total cart price to 0 for an empty cart
-        numOfCartItems: cart.cartItems.length,
-        data: [], // Return an empty array for data
-      },
-    });
-    return res.status(statusCode).json(body);
-  }
-   // Calculate total cart price
-   const totalPrice = calcTotalCartPrice(cart);
-
-  // 4. If cart and cartItems exist, create a success response body
-  const courses = await Course.aggregate([
-    {
-      $match: {
-        _id: { $in: cart.cartItems.map(item => item.course) } // Match courses in the cart
-      }
-    },
-    {
-      $lookup: {
-        from: 'users',
-        localField: 'instructor',
-        foreignField: '_id',
-        as: 'instructorInfo',
-      },
-    },
-    {
-      $project: {
-        _id: 1,
-        title: 1,
-        thumbnail: 1,
-        price: { $ifNull: ['$price', 0] },
-        ratingsAverage: { $ifNull: ['$ratingsAverage', 0] },
-        instructorName: { $arrayElemAt: ['$instructorInfo.name', 0] },
-      },
-    },
-  ]);
-
-  const { body, statusCode } = success({
+  res.success({
+    numOfCartItems: cart.cartItems.length,
     data: {
-      totalCartPrice: totalPrice, // Include the total cart price in the response
+      cart,
       numOfCartItems: cart.cartItems.length,
-      data: courses, // Return courses in the cart
     },
   });
-
-  // 5. Send the success response
-  res.status(statusCode).json(body);
 });
 
 

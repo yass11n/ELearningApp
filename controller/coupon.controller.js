@@ -1,27 +1,43 @@
-const factory = require('../services/factory.service');
-const Coupon = require('../models/coupon.model');
+const Coupon = require("../models/coupon.model");
+const {
+  createOne,
+  getOne,
+  paginate,
+  updateOne,
+  deleteOne,
+} = require("../services/factory-handler");
 
-// @desc    Get list of coupons
-// @route   GET /api/v1/coupons
-// @access  Private/Admin-Manager
-exports.getCoupons = factory.getAll(Coupon);
+/**
+ * @desc get coupons
+ * @path GET /v1/coupon
+ * @access private [Admin | Instructor]
+ */
+exports.getCoupons = paginate(Coupon, ["name", "code"]);
 
-// @desc    Get specific coupon by id
-// @route   GET /api/v1/coupons/:id
-// @access  Private/Admin-Manager
-exports.getCoupon = factory.getOne(Coupon);
+/**
+ * @desc get coupon by id
+ * @path GET /v1/coupon/:id
+ * @access private [Admin | Instructor]
+ */
+exports.getCoupon = getOne(Coupon);
 
-// @desc    Create coupon
-// @route   POST  /api/v1/coupons
-// @access  Private/Admin-Manager
-exports.createCoupon = factory.createOne(Coupon);
+/**
+ * @desc create new coupon
+ * @path POST /v1/coupon
+ * @access private [Admin | Instructor]
+ */
+exports.createCoupon = createOne(Coupon);
 
-// @desc    Update specific coupon
-// @route   PUT /api/v1/coupons/:id
-// @access  Private/Admin-Manager
-exports.updateCoupon = factory.updateOne(Coupon);
+/**
+ * @desc update coupon by id
+ * @path PUT /v1/coupon/:id
+ * @access private [Admin | Instructor]
+ */
+exports.updateCoupon = updateOne(Coupon);
 
-// @desc    Delete specific coupon
-// @route   DELETE /api/v1/coupons/:id
-// @access  Private/Admin-Manager
-exports.deleteCoupon = factory.deleteOne(Coupon);
+/**
+ * @desc delete coupon by id
+ * @path DELETE /v1/coupon/:id
+ * @access private [Admin | Instructor]
+ */
+exports.deleteCoupon = deleteOne(Coupon);
