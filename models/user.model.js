@@ -14,7 +14,11 @@ const userSchema = new mongoose.Schema(
     },
     bio: String,
     phone: String,
-    profileImage: String,
+    profileImage: {
+      type: String,
+      default:
+        "https://res.cloudinary.com/dcjrolufm/image/upload/v1711983058/defaults/rrn916ctapttfi2tsrtj.png", // Default link
+    },
     jobTitle: String,
     jobDescription: String,
     facebookUrl: String,
@@ -24,20 +28,36 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["Male", "Female"],
     },
+    transactions: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "PurchaseRequest",
+      },
+    ],
     roles: {
       type: String,
-      enum: ["Instructor", "User","Admin"],
+      enum: ["Instructor", "User", "Admin"],
       default: "User",
     },
-    wishlist: [{
-      type: mongoose.Schema.Types.ObjectId
-      , ref: "Course"
-    }],
+    wishlist: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course",
+      },
+    ],
     // Add a reference to the Course model
-    courses: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Course',
-    }],
+    courses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course",
+      },
+    ],
+    enrolledCourses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Course",
+      },
+    ],
   },
   {
     timestamps: true,

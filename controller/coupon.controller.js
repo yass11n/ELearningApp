@@ -2,17 +2,17 @@ const Coupon = require("../models/coupon.model");
 const {
   createOne,
   getOne,
-  paginate,
   updateOne,
   deleteOne,
-} = require("../services/factory-handler");
+  getAll
+} = require("../services/factory.service");
 
 /**
  * @desc get coupons
  * @path GET /v1/coupon
  * @access private [Admin | Instructor]
  */
-exports.getCoupons = paginate(Coupon, ["name", "code"]);
+exports.getCoupons = getAll(Coupon, ["name", "code"]);
 
 /**
  * @desc get coupon by id

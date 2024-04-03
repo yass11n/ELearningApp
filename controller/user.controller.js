@@ -22,8 +22,12 @@ const {
   uploadMix,
 } = require("../services/file-upload.service");
 
-const { getAll, getOne } = require("../services/factory.service");
+const {
+  //  getAll,
+  getOne,
+} = require("../services/factory.service");
 const UserCredentials = require("../models/userCredential.model");
+const ApiFeatures = require("../services/api-features.service");
 
 exports.uploadProfileImage = uploadSingle("profileImage");
 //uploadMix([{ name: 'profileImage', maxCount: 1 }]);
@@ -33,8 +37,13 @@ exports.resizeProfileImage = asyncHandler(async (req, res, next) => {
     const filename = `user-${uuid()}-${Date.now()}.jpeg`;
 
     if (req.file) {
-      if (!req.file.mimetype.startsWith("image") && req.file.mimetype !== 'application/octet-stream') {
-        return next(validationError({ message: "Only image files are allowed" }));
+      if (
+        !req.file.mimetype.startsWith("image") &&
+        req.file.mimetype !== "application/octet-stream"
+      ) {
+        return next(
+          validationError({ message: "Only image files are allowed" })
+        );
       }
 
       const img = await sharp(req.file.buffer)
@@ -53,9 +62,11 @@ exports.resizeProfileImage = asyncHandler(async (req, res, next) => {
         // Save image into our db
         req.body.profileImage = data.secure_url;
       } else {
-        return next(validationError({
-          message: "Error uploading profile image"
-        }));
+        return next(
+          validationError({
+            message: "Error uploading profile image",
+          })
+        );
       }
     }
 
@@ -95,7 +106,34 @@ exports.createUser = asyncHandler(async (req, res) => {
  * @route GET /api/v1/users
  * @access private [admin]
  */
-exports.getAllUsers = getAll(User);
+exports.getAllUsers = asyncHandler(async (req, res) => {
+  // Build query
+  const documentsCounts = await User.countDocuments(); // Assuming your model is named 'User'
+  const apiFeatures = new ApiFeatures(User.find({}), req.query)
+    .paginate(documentsCounts)
+    .filter()
+    .search()
+    .limitFields()
+    .sort();
+
+  // Execute query
+  const { mongooseQuery, paginationResult } = apiFeatures;
+  let documents = await mongooseQuery;
+
+  // Check if documents have a Cloudinary photo, if not, replace with default
+  documents = documents.map((User) => {
+    if (!User.profileImage) {
+      User.profileImage =
+        "https://res.cloudinary.com/dcjrolufm/image/upload/v1711983058/defaults/rrn916ctapttfi2tsrtj.png";
+    }
+    return User;
+  });
+
+  const { body, statusCode } = success({
+    data: { results: documents, paginationResult },
+  });
+  res.status(statusCode).json(body);
+});
 
 /**
  * @description get user by id
@@ -105,13 +143,12 @@ exports.getAllUsers = getAll(User);
 exports.getUser = getOne(User);
 
 /**
- * @description (update user by id) profile 
+ * @description (update user by id) profile
  * @route PUT /api/v1/users/:id
  * @access private [admin]
  */
 exports.updateUser = asyncHandler(async (req, res, next) => {
   try {
-    console.log("henaaa")
     // 1- Update userCredentials for provider id and return data after update (new one)
     if (req.body.email) {
       await UserCredentials.findOneAndUpdate(
@@ -124,7 +161,6 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
     const userId = req.params.id;
     // 2- Fetch the existing user data from the database
     const existingUser = await User.findById(userId);
-    console.log("henna")
 
     // 3- Check if the user exists
     if (!existingUser) {
@@ -134,10 +170,11 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
         })
       );
     }
-    console.log(existingUser);
-    console.log(existingUser.profileImage);
     // 4- Construct an update object with only the allowed fields that have different values
     const updateObject = {};
+    if (req.body.roles !== userId.roles) {
+      updateObject.roles = req.body.roles;
+    }
     if (req.body.name !== userId.name) {
       updateObject.name = req.body.name;
     }
@@ -156,7 +193,6 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
     console.log(userId.profileImage);
     console.log(req.body.profileImage);
     if (req.body.profileImage !== userId.profileImage) {
-      console.log("gowa");
       console.log(userId.profileImage);
       console.log(req.body.profileImage);
       updateObject.profileImage = req.body.profileImage;
@@ -185,6 +221,7 @@ exports.updateUser = asyncHandler(async (req, res, next) => {
         new: true,
       }
     );
+    console.log(User.roles);
 
     // 6- Send response with the updated user profile
     const { statusCode, body } = success({ data: updatedUser });
@@ -260,7 +297,6 @@ exports.deleteUser = asyncHandler(async (req, res, next) => {
 exports.getLoggedUser = asyncHandler(async (req, res, next) => {
   // 1- set params.id to logged user id
   req.params.id = req.user._id;
-
   // 2- go to getUser
   next();
 });
@@ -321,7 +357,6 @@ exports.updateLoggedUserPassword = asyncHandler(async (req, res, next) => {
  * @access protected [user]
  */
 exports.deleteLoggedUser = asyncHandler(async (req, res) => {
-
   // 1- set active state to false for user
   await UserCredential.findOneAndUpdate(
     { user: req.user._id },
@@ -339,7 +374,7 @@ exports.deleteLoggedUser = asyncHandler(async (req, res) => {
 });
 
 // exports.updateUser = asyncHandler(async (req, res, next) => {
-//   // 1- update userCredentials for provider id and return data after update(new one) 
+//   // 1- update userCredentials for provider id and return data after update(new one)
 //   if(req.body.email){
 //    await UserCredentials.findOneAndUpdate({ user : req.params.id}, {providerId : req.body.email}, {new : true});
 //   }
@@ -359,4 +394,3 @@ exports.deleteLoggedUser = asyncHandler(async (req, res) => {
 //   // 4- send response with new user profile
 //   const { statusCode, body } = success({ data: user });
 //   res.status(statusCode).json(body); });
-

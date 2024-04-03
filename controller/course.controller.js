@@ -1,28 +1,27 @@
 //import ApiFeatures from '../services/api-features.service';
 const asyncHandler = require("express-async-handler");
-const mongoose = require('mongoose');
 const sharp = require("sharp");
 const { v4: uuid } = require("uuid");
-const factory = require("../services/factory.service")
-const {
-  recordNotFound,
-  validationError,
-} = require("../utils/response/errors");
+// const factory = require("../services/factory.service")
+const { recordNotFound, validationError , unAuthorized } = require("../utils/response/errors");
 const { success } = require("../utils/response/response");
-const Course = require('../models/Course.model');
-const Category = require('../models/Category.model'); // Import your Category model
-const Section = require('../models/section.model'); // Import your Category model Module
-const Module = require('../models/Module.model'); // Import your Category model Module
+const Course = require("../models/Course.model");
+const Category = require("../models/Category.model"); // Import your Category model
+const Section = require("../models/section.model"); // Import your Category model Module
+const Module = require("../models/Module.model"); // Import your Category model Module
 const User = require("../models/user.model");
+const Transaction = require("../models/transaction.model");
 
 const {
   uploadToCloudinary,
   uploadMix,
 } = require("../services/file-upload.service");
 
-
 //handles uploading thumbnail and vedioTrailer
-const uploadtBoth = uploadMix([{ name: 'thumbnail', maxCount: 1 }, { name: 'videoTrailer', maxCount: 1 }]);
+const uploadtBoth = uploadMix([
+  { name: "thumbnail", maxCount: 1 },
+  { name: "videoTrailer", maxCount: 1 },
+]);
 
 // Import necessary modules and dependencies
 const resizethumbnailImg = asyncHandler(async (req, res, next) => {
@@ -32,10 +31,14 @@ const resizethumbnailImg = asyncHandler(async (req, res, next) => {
 
     // Check if a thumbnail file is provided in the request
     if (req.files.thumbnail) {
-
       // Validate the mimetype of the thumbnail file
-      if (!req.files.thumbnail[0].mimetype.startsWith("image") && req.files.thumbnail[0].mimetype !== 'application/octet-stream') {
-        return next(validationError({ message: "Only image files are allowed" }));
+      if (
+        !req.files.thumbnail[0].mimetype.startsWith("image") &&
+        req.files.thumbnail[0].mimetype !== "application/octet-stream"
+      ) {
+        return next(
+          validationError({ message: "Only image files are allowed" })
+        );
       }
 
       // Resize and format the thumbnail image using sharp library
@@ -55,10 +58,11 @@ const resizethumbnailImg = asyncHandler(async (req, res, next) => {
         // Save the Cloudinary URL of the thumbnail image into the request body
         req.body.thumbnail = data.secure_url;
       } else {
-        return next(validationError({ message: "Error uploading thumbnail image" }));
+        return next(
+          validationError({ message: "Error uploading thumbnail image" })
+        );
       }
     }
-
 
     // Check if a video trailer file is provided in the request
     if (req.files.videoTrailer) {
@@ -76,7 +80,9 @@ const resizethumbnailImg = asyncHandler(async (req, res, next) => {
         // Save the Cloudinary URL of the video trailer into the request body
         req.body.videoTrailer = data.secure_url;
       } else {
-        return next(validationError({ message: "Error uploading video trailer" }));
+        return next(
+          validationError({ message: "Error uploading video trailer" })
+        );
       }
     }
 
@@ -94,13 +100,12 @@ const resizethumbnailImg = asyncHandler(async (req, res, next) => {
  * @access private [Instructor, Admin]
  */
 const createCourse = asyncHandler(async (req, res, next) => {
-
   try {
     // create new course with title, subTitle, category, language, level and instructor fields
     // 1- Extract required fields from the request body
     const { title, subTitle, category, language, level } = req.body;
-    const { _id } = req.user;//instrucotr id
-    console.log(_id)
+    const { _id } = req.user; //instrucotr id
+    console.log(_id);
     // 2- Create the course using the extracted fields
     const newCourse = await Course.create({
       title: title,
@@ -108,7 +113,7 @@ const createCourse = asyncHandler(async (req, res, next) => {
       category,
       language,
       level,
-      instructor: _id
+      instructor: _id,
     });
 
     console.log(newCourse);
@@ -147,21 +152,23 @@ const createCourse = asyncHandler(async (req, res, next) => {
 const getAllCourses = asyncHandler(async (req, res) => {
   const courses = await Course.aggregate([
     {
-      $lookup: {// used to join the users collection and the instructor filed
-        from: 'users', // Assuming 'users' is the collection name for users
-        localField: 'instructor',
-        foreignField: '_id',
-        as: 'instructorInfo',
+      $lookup: {
+        // used to join the users collection and the instructor filed
+        from: "users", // Assuming 'users' is the collection name for users
+        localField: "instructor",
+        foreignField: "_id",
+        as: "instructorInfo",
       },
     },
     {
-      $project: {//used to project the selected fileds [_id,title,thumbnail,price,ratingAverage,instructorName]
+      $project: {
+        //used to project the selected fileds [_id,title,thumbnail,price,ratingAverage,instructorName]
         _id: 1,
         title: 1,
         thumbnail: 1,
-        price: { $ifNull: ['$price', 0] }, // Initialize price as 0 if it's null
-        ratingsAverage: { $ifNull: ['$ratingsAverage', 0] }, // Initialize ratingsAverage as 0 if it's null
-        instructorName: { $arrayElemAt: ['$instructorInfo.name', 0] }, // Assuming 'name' is the field in User model for instructor's name
+        price: { $ifNull: ["$price", 0] }, // Initialize price as 0 if it's null
+        ratingsAverage: { $ifNull: ["$ratingsAverage", 0] }, // Initialize ratingsAverage as 0 if it's null
+        instructorName: { $arrayElemAt: ["$instructorInfo.name", 0] }, // Assuming 'name' is the field in User model for instructor's name
       },
     },
   ]);
@@ -171,7 +178,6 @@ const getAllCourses = asyncHandler(async (req, res) => {
   });
   res.status(statusCode).json(body);
 });
-
 
 /**
  * @description get course by id
@@ -183,23 +189,27 @@ const getCourseById = asyncHandler(async (req, res, next) => {
     const courseId = req.params.id;
 
     // Find the course by ID and populate the 'modules' field with the complete module objects
-    const course = await Course.findById(courseId).populate('instructor').populate({
-      path: 'sections',
-      populate: {
-        path: 'modules',
-        model: 'Module',
-        select: 'name _id isFree', // Specify the fields you want to include in the populated modules
-      },
-    });
+    const course = await Course.findById(courseId)
+      .populate("instructor")
+      .populate({
+        path: "sections",
+        populate: {
+          path: "modules",
+          model: "Module",
+          select: "name _id isFree", // Specify the fields you want to include in the populated modules
+        },
+      });
 
     if (!course) {
-      return next(recordNotFound({ message: `Course with id ${req.params.id} not found` }));
+      return next(
+        recordNotFound({ message: `Course with id ${req.params.id} not found` })
+      );
     }
 
     // Extract the populated modules from each section and format them as desired
     const formattedModules = [];
-    course.sections.forEach(section => {
-      section.modules.forEach(module => {
+    course.sections.forEach((section) => {
+      section.modules.forEach((module) => {
         formattedModules.push({ name: module.name, id: module._id });
       });
     });
@@ -216,7 +226,6 @@ const getCourseById = asyncHandler(async (req, res, next) => {
   }
 });
 
-
 /**
  * @description update course by id
  * @route PUT /api/v1/course/:id
@@ -225,9 +234,7 @@ const getCourseById = asyncHandler(async (req, res, next) => {
 const updateCourse = asyncHandler(async (req, res, next) => {
   //update course with thumbnails, trailer,courseDescription, whatWillBeTaught, targetAudience, requirements
   const courseId = req.params.id;
-  console.log(req.body.isFree)
   try {
-
     // 1- Check if the course exists
     if (!courseId) {
       return next(
@@ -297,8 +304,13 @@ const updateCourse = asyncHandler(async (req, res, next) => {
     if (req.body.ratingsAverage !== courseId.ratingsAverage) {
       updatedCourseData.ratingsAverage = req.body.ratingsAverage;
     }
+    
     //3- Update course by id with the constructed update object
-    const updatedData = await Course.findByIdAndUpdate(courseId, updatedCourseData, { new: true });
+    const updatedData = await Course.findByIdAndUpdate(
+      courseId,
+      updatedCourseData,
+      { new: true }
+    );
 
     //4- send a response
     const { statusCode, body } = success({ data: updatedData });
@@ -359,9 +371,8 @@ const deleteCourse = asyncHandler(async (req, res, next) => {
           await Module.findByIdAndDelete(module);
         }
         // 12- delete section
-        await Section.findByIdAndDelete(sectionId)
+        await Section.findByIdAndDelete(sectionId);
       }
-
     }
 
     // 13- delete course
@@ -400,11 +411,10 @@ const addCourseToWishlist = asyncHandler(async (req, res) => {
     );
     // get response back
     const { statusCode, body } = success({
-      message: 'Course removed successfully from your wishlist.',
+      message: "Course removed successfully from your wishlist.",
       data: updatedUser.wishlist,
     });
     res.status(statusCode).json(body);
-
   } else {
     // add course to wishlist
     const updatedUser = await User.findByIdAndUpdate(
@@ -414,7 +424,7 @@ const addCourseToWishlist = asyncHandler(async (req, res) => {
     );
     // get response back
     const { statusCode, body } = success({
-      message: 'Course added successfully to your wishlist.',
+      message: "Course added successfully to your wishlist.",
       data: updatedUser.wishlist,
     });
     res.status(statusCode).json(body);
@@ -428,12 +438,12 @@ const addCourseToWishlist = asyncHandler(async (req, res) => {
  */
 const getLoggedUserWishlist = asyncHandler(async (req, res) => {
   // 1- get user by id
-  const user = await User.findById(req.user._id).populate('wishlist');
+  const user = await User.findById(req.user._id).populate("wishlist");
 
   // 2- get response back
   const { statusCode, body } = success({
-    message: 'User Wishlist:',
-    data: user.wishlist
+    message: "User Wishlist:",
+    data: user.wishlist,
   });
   res.status(statusCode).json(body);
 });
@@ -443,21 +453,28 @@ const getLoggedUserWishlist = asyncHandler(async (req, res) => {
  * @route GET /api/v1/course/categoriesId/:categoryId
  * @access protected User
  */
-const getCoursesInCategory = asyncHandler(async (req, res, next) => {//not finished yet
+const getCoursesInCategory = asyncHandler(async (req, res, next) => {
+  //not finished yet
   try {
     // 1- get category by id
     const categoryWithCourses = await Category.findById(req.params.categoryId);
     //console.log(categoryWithCourses);
     // 2- check if the category exists
-    if (!categoryWithCourses || !categoryWithCourses.courses || categoryWithCourses.courses.length === 0) {
-      return next(recordNotFound({ message: `Courses not found for this category` }));
+    if (
+      !categoryWithCourses ||
+      !categoryWithCourses.courses ||
+      categoryWithCourses.courses.length === 0
+    ) {
+      return next(
+        recordNotFound({ message: `Courses not found for this category` })
+      );
     }
     // 3- get the category courses
     // const courses = categoryWithCourses.courses;
-    
+
     // // 4- get courses by id
     // const cours = await Course.findById(courses);
-  
+
     // // 5- map through each course and get the id, title, thumbnail, price, ratingsAvaerage, and instructorName
     // const formattedCourses = courses.map(course => ({
     //   _id: course,
@@ -473,7 +490,10 @@ const getCoursesInCategory = asyncHandler(async (req, res, next) => {//not finis
 
     for (const courseId of courses) {
       // get course by id
-      const course = await Course.findById(courseId).populate('instructor', 'name'); // Populate instructor's name only
+      const course = await Course.findById(courseId).populate(
+        "instructor",
+        "name"
+      ); // Populate instructor's name only
 
       if (course) {
         formattedCourses.push({
@@ -489,14 +509,13 @@ const getCoursesInCategory = asyncHandler(async (req, res, next) => {//not finis
 
     // 5- return response
     const { statusCode, body } = success({
-      message: 'Instructor courses',
+      message: "Instructor courses",
       data: { results: formattedCourses },
     });
     res.status(statusCode).json(body);
   } catch (error) {
-    next(error)
+    next(error);
   }
-
 });
 // // 1- Find the category by ID and populate the 'courses' field to get course details
 // const categoryWithCourses = await Category.findById(req.params.categoryId).populate('courses');
@@ -529,17 +548,19 @@ const getCoursesByInstructor = asyncHandler(async (req, res, next) => {
 
     // 2- check if the instructor exists
     if (!instructor || !instructor.courses || instructor.courses.length === 0) {
-      return next(recordNotFound({ message: `Courses not found for this instructor` }));
+      return next(
+        recordNotFound({ message: `Courses not found for this instructor` })
+      );
     }
 
     // 3- get the instructor courses
     const courses = instructor.courses; // Array of courses for the instructor
-    console.log(courses)
+    console.log(courses);
     // 4- get courses by id
     const cours = await Course.findById(courses);
-    console.log(cours)
+    console.log(cours);
     // 5- map through each course and get the id, title, thumbnail, price, ratingsAvaerage, and instructorName
-    const formattedCourses = courses.map(course => ({
+    const formattedCourses = courses.map((course) => ({
       _id: course,
       title: cours.title,
       thumbnail: cours.thumbnail,
@@ -549,7 +570,7 @@ const getCoursesByInstructor = asyncHandler(async (req, res, next) => {
     }));
     // 6- return response
     const { statusCode, body } = success({
-      message: 'Instructor courses',
+      message: "Instructor courses",
       data: { results: formattedCourses },
     });
     res.status(statusCode).json(body);
@@ -563,27 +584,23 @@ const clearCatogrySections = asyncHandler(async (req, res, next) => {
     const catogory = await Category.findById(req.params.id);
 
     const courses = catogory.courses;
-    console.log(courses)
+    console.log(courses);
 
     if (!courses) {
-      return next(recordNotFound({ message: 'Courses not found' }))
+      return next(recordNotFound({ message: "Courses not found" }));
     }
 
     for (const coursesId of courses) {
-
       await Category.updateMany(
         { courses: coursesId },
         { $pull: { courses: coursesId } }
       );
-
     }
     const { statusCode, body } = success({
-      message: 'catogery courses pulled successfully',
-
+      message: "catogery courses pulled successfully",
     });
     res.status(statusCode).json(body);
-  }
-  catch (error) {
+  } catch (error) {
     next(error);
   }
 });
@@ -597,15 +614,12 @@ const searchCourse = asyncHandler(async (req, res, next) => {
   try {
     const courses = await Course.find().sort();
 
-
     const { statusCode, body } = success({
-      message: 'catogery courses pulled successfully',
-      data: courses
+      message: "catogery courses pulled successfully",
+      data: courses,
     });
     res.status(statusCode).json(body);
-
-  }
-  catch (err) {
+  } catch (err) {
     next(err);
   }
 });
@@ -618,19 +632,21 @@ const searchCourse = asyncHandler(async (req, res, next) => {
 const coursDuration = asyncHandler(async (req, res, next) => {
   try {
     //get course by id
-    const course = await Course.findById(req.params.id)
+    const course = await Course.findById(req.params.id);
     console.log(course);
     //check if course exists
     if (!course) {
-      return next(recordNotFound({ message: 'course not found' }));
+      return next(recordNotFound({ message: "course not found" }));
     }
     //check if there exists sections in this course
     if (course.sections) {
       //get course sections
       const sectionsId = course.sections;
-      console.log(sectionsId)
+      console.log(sectionsId);
       // initiate couse duration
-      let hours = 0; let minutes = 0; let seconds = 0;
+      let hours = 0;
+      let minutes = 0;
+      let seconds = 0;
       //iterate through each section
       for (const section of sectionsId) {
         // get section by id
@@ -651,15 +667,37 @@ const coursDuration = asyncHandler(async (req, res, next) => {
       await course.save();
       //return response
       const { statusCode, body } = success({
-        message: 'Course duration calculated successfully',
-        data: course.duration
+        message: "Course duration calculated successfully",
+        data: course.duration,
       });
       res.status(statusCode).json(body);
     }
   } catch (err) {
     next(err);
   }
-})
+});
+
+// Example middleware function
+const checkCourseEnrollment = async (req, res, next) => {
+  const { userId } = req.user; // Assuming you have user information in the request
+  const courseId = req.params.courseId; // Get course ID from the request
+
+  try {
+    const transaction = await Transaction.findOne({
+      userId,
+      courseId,
+      enrolled: true,
+    });
+    if (!transaction) {
+      return next(
+        unAuthorized({ message: "You are not enrolled in this course" })
+      );
+    }
+    next(); // User is enrolled, proceed to the route handler
+  } catch (error) {
+    next(error);
+  }
+};
 module.exports = {
   getAllCourses,
   getCourseById,
@@ -674,5 +712,6 @@ module.exports = {
   getCoursesByInstructor,
   searchCourse,
   clearCatogrySections,
-  coursDuration
+  coursDuration,
+  checkCourseEnrollment
 };

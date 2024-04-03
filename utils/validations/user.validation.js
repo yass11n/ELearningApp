@@ -82,6 +82,7 @@ exports.updateUserValidator = [
     })
     .withMessage("role must be admin or instractor or user"),
     body("bio")
+  .optional()
   .notEmpty()
   .withMessage("Bio is required")
   .isLength({ max: 500 })

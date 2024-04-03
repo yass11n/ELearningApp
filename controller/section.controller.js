@@ -1,16 +1,15 @@
 const asyncHandler = require("express-async-handler");
-const { recordNotFound, } = require("../utils/response/errors");
+const { recordNotFound } = require("../utils/response/errors");
 const { success } = require("../utils/response/response");
-
 //import createModule from module controller
 const { createModule } = require("./module.controller");
 const Section = require("../models/section.model");
 //const Modules = require("../models/Module.model");
 
-const { Module } = require("../models/Module.model")
+const  Module  = require("../models/Module.model")
 const { uploadMix, uploadFilesToCloudinary } = require("../services/file-upload.service")
 const Course = require("../models/Course.model")
-const factory = require("../services/factory.service");
+// const factory = require("../services/factory.service");
 
 const uploadModuleVideos = uploadMix([{ name: "file" }])
 
@@ -77,14 +76,14 @@ const createSection = asyncHandler(async (req, res) => {
 * @route GET /api/v1/section
 * @access private [Instructor, Admin]
 */
-const getAllSections = asyncHandler(async (req, res) => {
+const getAllSections = asyncHandler(async (req, res, next) => {
   // 1- get all sections
   const sections = await Section.find().populate('modules', 'name');//populate to courses and modules
 
   // 3- check if exists
   if (!sections) {
     return next(recordNotFound({ message: `no section is found` }))
-  };
+  }
   // 3- send response back
   const { statusCode, body } = success({
     message: "get all sections",
@@ -234,7 +233,7 @@ const deleteSection = asyncHandler(async (req, res, next) => {
     // 2- check if section exists
     if (!section) {
       console.log(section)
-      return next(RecordNotFound({ message: `section with id ${sectionId} is not found` }));
+      return next( recordNotFound({ message: `section with id ${sectionId} is not found` }));
     }
 
     // 3- Get associated module IDs
@@ -292,6 +291,7 @@ const deleteSection = asyncHandler(async (req, res, next) => {
 //     next(error);
 //   }
 // });
+
 /**
 * @description update sectionDuration
 * @route PUT /api/v1/section/calculate-duration/:id

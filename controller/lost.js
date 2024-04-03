@@ -104,3 +104,15 @@
 //   data: coursesInCategory
 // });
 // res.status(statusCode).json(body);*/
+//  // Update Modules within Sections for the approved course
+    //  const sections = await Section.find({ courseId }); // Find sections for the course
+
+    //  for (const section of sections) {
+    //    const moduleIds = section.modules; // Get module IDs within the section
+ 
+    //    for (const moduleId of moduleIds) {
+    //       await Module.findByIdAndUpdate( moduleId , {isFree : true}); // Update all modules to isFree: true
+    //    }
+    //  }
+
+    

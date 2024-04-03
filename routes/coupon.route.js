@@ -12,8 +12,8 @@ const {
   getCouponValidator,
   getCouponsValidator,
   updateCouponValidator,
-} = require("../utils/validator/coupon.validator");
-const { protect, allowedRoles } = require("../services/auth");
+} = require("../utils/validations/coupon.validation");
+const { protect, allowedRoles } = require("../services/auth.service");
 
 const router = Router();
 

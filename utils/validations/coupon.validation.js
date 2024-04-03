@@ -1,7 +1,6 @@
 const { body, param, checkExact } = require("express-validator");
 const Coupon = require("../../models/coupon.model");
 const validatorMiddleware = require("../../middleware/validatorMiddleware");
-const roles = require("../../config/roles");
 const { unAuthorized, recordNotFound } = require("../response/errors");
 const users = require("../../models/user.model")
 
@@ -23,7 +22,7 @@ exports.getCouponValidator = [
   // Check permissions for get (admin or owner)
   async (req, _res, next) => {
     if (req.user.roles === users.roles.Admin) return next();
-    if (req.user.roles === roles.VENDOR) {
+    if (req.user.roles === users.roles.Instructor) {
       const coupon = await Coupon.findById(req.params.id);
       if (!coupon) return next(recordNotFound({ message: "Coupon not found" }));
 

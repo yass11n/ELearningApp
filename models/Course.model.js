@@ -1,28 +1,40 @@
 // course.model.js
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const courseSchema = new mongoose.Schema({
   instructor: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: "User",
   },
   title: {
     type: String,
     // required: true,
   },
+  enrolledUsers: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
   subTitle: {
     type: String,
     // required: true,
   },
   category: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
+    ref: "Category",
     //required: true,
   },
   language: {
     type: String,
     //required: true,
   },
+  transactions: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PurchaseRequest",
+    },
+  ],
   level: {
     type: String,
     enum: ["beginner", "intermidiate", "advanced", "Proficient"],
@@ -31,7 +43,7 @@ const courseSchema = new mongoose.Schema({
     type: Number,
     min: 0,
   },
-  // first page 
+  // first page
 
   thumbnail: {
     type: String, // Assuming the image will be stored as a URL
@@ -86,10 +98,10 @@ const courseSchema = new mongoose.Schema({
     seconds: {
       type: Number,
       default: 0,
-    }
+    },
   },
 });
 
-const Course = mongoose.model('Course', courseSchema);
+const Course = mongoose.model("Course", courseSchema);
 
 module.exports = Course;
