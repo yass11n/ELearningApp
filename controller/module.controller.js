@@ -184,7 +184,7 @@ const deleteModule = asyncHandler(async (req, res, next) => {
  * * updating the duration of a specific module to be like hours:mintes:seconds
  * @route PUT /api/v1/coursemodule/calculate-duration/:id
  */
-const CalcDuration = async (req, res) => {
+const CalcDuration = async (req, res, next) => {
   try {
     const moduleId = req.params.id;
     console.log(moduleId)

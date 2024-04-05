@@ -39,10 +39,6 @@ const courseSchema = new mongoose.Schema({
     type: String,
     enum: ["beginner", "intermidiate", "advanced", "Proficient"],
   },
-  durationHours: {
-    type: Number,
-    min: 0,
-  },
   // first page
 
   thumbnail: {
@@ -82,10 +78,6 @@ const courseSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  price: {
-    type: Number,
-    default: 0,
-  },
   duration: {
     hours: {
       type: Number,
@@ -100,6 +92,20 @@ const courseSchema = new mongoose.Schema({
       default: 0,
     },
   },
+  price: {
+    amount: {
+      type: Number,
+      default: 0,
+    },
+    currency: {
+      type: String,
+      enum: ["EGP", "USD"], 
+      default: "EGP", 
+    },
+  },
+},
+{
+  timestamps: true,
 });
 
 const Course = mongoose.model("Course", courseSchema);

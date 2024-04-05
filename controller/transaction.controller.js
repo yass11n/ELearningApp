@@ -14,8 +14,8 @@ const { v4: uuid } = require("uuid");
 const User = require("../models/user.model");
 const Course = require("../models/Course.model");
 const Section = require("../models/section.model");
-const Transaction = mongoose.model('PurchaseRequest');
-const Module = mongoose.model('Module');
+const Transaction = require("../models/transaction.model");
+const Module = mongoose.model("Module");
 
 const {
   uploadToCloudinary,
@@ -77,7 +77,6 @@ const resizepaymentReceiptImage = asyncHandler(async (req, res, next) => {
  */
 const createTransaction = asyncHandler(async (req, res, next) => {
   try {
-    
     const { phoneNumber, paymentReceiptImage, courseId, CoursePrice , userId } = req.body;
 
     // Check for existing approved transactions
@@ -86,11 +85,25 @@ const createTransaction = asyncHandler(async (req, res, next) => {
       courseId,
       status: "Approved", // Only consider approved transactions
     });
+    console.log(phoneNumber, paymentReceiptImage, courseId, CoursePrice , userId);
 
     if (existingTransaction) {
-      return next(validationError({ message: "Transaction for this course already exists" }));
+      return next(validationError({ message: "You already enrolled this course" }));
     }
-    
+    // Check for existing pending transactions
+    const existingTransactions = await Transaction.findOne({
+      userId,
+      courseId,
+      status: "Pending", // Only consider pending transactions
+    });
+
+    if (existingTransactions) {
+      return next(
+        validationError({
+          message: "You already have a pending transaction for this course.",
+        })
+      );
+    }
     
     // Find the course by ID (assuming courseId is valid)
     const course = await Course.findById(courseId);
@@ -111,7 +124,6 @@ const createTransaction = asyncHandler(async (req, res, next) => {
       paymentReceiptImage: paymentReceiptImage,
       userId : userId,
       // Set transaction status to "Pending" initially
-      status: "Pending",
     });
 
     // Update the User model to add the transaction ID
@@ -200,6 +212,7 @@ const getOneTransaction = asyncHandler(async (req, res, next) => {
  */
 const approveTransaction = asyncHandler(async (req, res, next) => {
   try {
+    // id of transaction process
     const transactionId = req.params.id;
 
     const transaction = await Transaction.findByIdAndUpdate(

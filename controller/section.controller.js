@@ -1,15 +1,16 @@
 const asyncHandler = require("express-async-handler");
-const { recordNotFound } = require("../utils/response/errors");
+const { recordNotFound, } = require("../utils/response/errors");
 const { success } = require("../utils/response/response");
+
 //import createModule from module controller
 const { createModule } = require("./module.controller");
 const Section = require("../models/section.model");
 //const Modules = require("../models/Module.model");
 
-const  Module  = require("../models/Module.model")
+const { Module } = require("../models/Module.model")
 const { uploadMix, uploadFilesToCloudinary } = require("../services/file-upload.service")
 const Course = require("../models/Course.model")
-// const factory = require("../services/factory.service");
+const factory = require("../services/factory.service");
 
 const uploadModuleVideos = uploadMix([{ name: "file" }])
 
@@ -49,7 +50,7 @@ const createSection = asyncHandler(async (req, res) => {
 
   // 2- create new section with module IDs and without files
   const newSection = await Section.create({
-    courseId: req.body.courseId
+    courseId: CourseId
   });
 
   // 3- get the course 
@@ -70,7 +71,6 @@ const createSection = asyncHandler(async (req, res) => {
   });
   res.status(statusCode).json(body);
 });
-
 /**
 * @description get all sections
 * @route GET /api/v1/section
@@ -153,8 +153,8 @@ const updateSection = asyncHandler(async (req, res, next) => {
     // 2- Get the section by id
     const sec = await Section.findById(sectionId);
 
-    if(!sec){
-      return next(recordNotFound({message:"there is no section with id " + sectionId}))
+    if (!sec) {
+      return next(recordNotFound({ message: "there is no section with id " + sectionId }))
     }
     // 3- get sections modules 
     const moduleIds = sec.modules;
@@ -219,7 +219,6 @@ const updateSection = asyncHandler(async (req, res, next) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
 /**
 * @description delete section
 * @route DELETE /api/v1/section
@@ -233,7 +232,7 @@ const deleteSection = asyncHandler(async (req, res, next) => {
     // 2- check if section exists
     if (!section) {
       console.log(section)
-      return next( recordNotFound({ message: `section with id ${sectionId} is not found` }));
+      return next(recordNotFound({ message: `section with id ${sectionId} is not found` }));
     }
 
     // 3- Get associated module IDs
@@ -241,7 +240,7 @@ const deleteSection = asyncHandler(async (req, res, next) => {
 
     // 4- Delete each module
     for (const moduleId of moduleIds) {
-      const deletedModule = await Modules.findByIdAndDelete(moduleId);
+      const deletedModule = await Module.findByIdAndDelete(moduleId);
       if (!deletedModule) {
         console.log(`Module with ID ${moduleId} not found.`);
       }
@@ -267,31 +266,6 @@ const deleteSection = asyncHandler(async (req, res, next) => {
   }
 });
 
-// const secDur = asyncHandler(async (req, res, next) => {
-//   try {
-//     console.log("helllloooooo")
-//     const secID = req.params.id;
-
-//     const Section= await Section.findById(secID);
-//     console.log(Section)
-
-//     let totalDuration = 0;
-//     // Iterate through each module in the section
-//     for (const moduleId of Section.modules) {
-//       // Find the module by ID
-//       const module = await Module.findById(moduleId);
-//       if (module) {
-//         // Add the module's duration to the total duration
-//         totalDuration += module.duration || 0; // Assuming module.duration exists and is a number
-//       }
-//     }
-//     // Set the sectionDuration to the calculated totalDuration
-//     Section.sectionDuration = totalDuration;
-//   } catch (error) {
-//     next(error);
-//   }
-// });
-
 /**
 * @description update sectionDuration
 * @route PUT /api/v1/section/calculate-duration/:id
@@ -309,7 +283,7 @@ const secDuration = asyncHandler(async (req, res, next) => {
     const modulesId = section.modules;
     console.log(modulesId)
 
-    let hours = 0; minutes = 0; seconds = 0;
+    let hours = 0,minutes = 0, seconds = 0;
     // Iterate through each module in the section
     for (const moduleId of modulesId) {
       // Find the module by ID

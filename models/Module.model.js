@@ -1,20 +1,15 @@
 // module.model.js
 // file.model.js
-const mongoose = require("mongoose");
-const ffmpeg = require("fluent-ffmpeg");
-ffmpeg.setFfprobePath("C:/PATH_programs/ffprobe");
-// Initialize Cloudinary with your credentials
-// cloudinary.config({
-//   cloud_name: 'CLOUDINARY_API_NAME',
-//   api_key: 'CLOUDINARY_API_KEY',
-//   api_secret: 'CLOUDINARY_API_SECERT'
-// });
+const mongoose = require('mongoose');
+const ffmpeg = require('fluent-ffmpeg');
+ffmpeg.setFfprobePath('C:/PATH_programs/ffprobe');
 
 const moduleSchema = new mongoose.Schema(
+
   {
     name: {
       type: String,
-      //unique: true,
+      //unique: true, 
     },
 
     isFree: {
@@ -44,8 +39,9 @@ const moduleSchema = new mongoose.Schema(
       seconds: {
         type: Number,
         default: 0,
-      },
+      }
     },
+
   },
   {
     timestamps: true,
@@ -56,19 +52,22 @@ const calculateModuleDuration = (secureUrl) => {
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(secureUrl, (err, data) => {
       if (err) {
-        console.error("Error:", err);
+        console.error('Error:', err);
         reject(err);
       } else {
         // Extract duration from metadata
         const duration = data.format.duration;
-        console.log("Video duration:", duration);
+        console.log('Video duration:', duration);
         resolve(duration);
       }
     });
   });
 };
 
-const Module = mongoose.model("Module", moduleSchema);
+
+
+
+const Module = mongoose.model('Module', moduleSchema);
 
 module.exports = {
   calculateModuleDuration,
